@@ -90,7 +90,6 @@ export type TargetMode = 'http' | 'kafka';
  * Represents a virtual smart meter in the simulation.
  */
 export interface VirtualMeter {
-  /** Unique meter identifier */
   meterId: string;
 
   /** Optional user ID associated with this meter */
