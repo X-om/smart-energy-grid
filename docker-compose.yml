@@ -1,101 +1,66 @@
-version: '3.9'
-
-networks:
-  segs-net:
-    driver: bridge
-
-volumes:
-  postgres-data:
-  timescaledb-data:
-  kafka-data:
-  zookeeper-data:
-  redis-data:
+version: "3.9"
 
 services:
-  # Infrastructure Services
+  # ==========================================
+  # INFRASTRUCTURE SERVICES
+  # ==========================================
   
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: bitnami/zookeeper:latest
     container_name: segs-zookeeper
-    networks:
-      - segs-net
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
+      - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
       - "2181:2181"
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: segs-kafka
-    depends_on:
-      - zookeeper
     networks:
       - segs-net
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    ports:
-      - "29092:29092"
-      - "9092:9092"
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: segs-kafka-ui
-    depends_on:
-      - kafka
-    networks:
-      - segs-net
-    environment:
-      KAFKA_CLUSTERS_0_NAME: segs-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    ports:
-      - "8080:8080"
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: segs-postgres
-    networks:
-      - segs-net
-    environment:
-      POSTGRES_USER: segs_user
-      POSTGRES_PASSWORD: segs_password
-      POSTGRES_DB: segs_db
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U segs_user"]
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  timescaledb:
-    image: timescale/timescaledb:latest-pg16
-    container_name: segs-timescaledb
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: segs-kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    depends_on:
+      zookeeper:
+        condition: service_healthy
     networks:
       - segs-net
-    environment:
-      POSTGRES_USER: timescale_user
-      POSTGRES_PASSWORD: timescale_password
-      POSTGRES_DB: timescale_db
-    volumes:
-      - timescaledb-data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U timescale_user"]
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: segs-kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=segs-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -103,168 +68,341 @@ services:
   redis:
     image: redis:7-alpine
     container_name: segs-redis
-    networks:
-      - segs-net
-    volumes:
-      - redis-data:/data
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
-
-  # Application Services (Placeholders)
-  
-  simulator:
-    build:
-      context: ./apps/simulator
-      dockerfile: Dockerfile
-    container_name: segs-simulator
+    volumes:
+      - redis-data:/data
     networks:
       - segs-net
-    depends_on:
-      - kafka
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: segs-postgres
+    ports:
+      - "5432:5432"
     environment:
-      NODE_ENV: production
-      KAFKA_BROKERS: kafka:9092
-    command: pnpm start
-    profiles:
-      - services
+      POSTGRES_DB: segs_db
+      POSTGRES_USER: segs_user
+      POSTGRES_PASSWORD: segs_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U segs_user -d segs_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  timescaledb:
+    image: timescale/timescaledb:2.13.0-pg15
+    container_name: segs-timescaledb
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: segs_db
+      POSTGRES_USER: segs_user
+      POSTGRES_PASSWORD: segs_password
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./scripts/init-timescale.sql:/docker-entrypoint-initdb.d/init-timescale.sql
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U segs_user -d segs_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: segs-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: segs-grafana
+    ports:
+      - "3006:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    depends_on:
+      - prometheus
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # APPLICATION MICROSERVICES
+  # ==========================================
 
   ingestion:
     build:
-      context: ./apps/ingestion
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/ingestion/Dockerfile
     container_name: segs-ingestion
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_TOPIC=raw_readings
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - segs-net
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      NODE_ENV: production
-      KAFKA_BROKERS: kafka:9092
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-    command: pnpm start
-    profiles:
-      - services
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   stream-processor:
     build:
       context: .
       dockerfile: apps/stream-processor/Dockerfile
     container_name: segs-stream-processor
-    networks:
-      - segs-net
-    depends_on:
-      kafka:
-        condition: service_started
-      timescaledb:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3002
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:9092
-      KAFKA_CLIENT_ID: stream-processor
-      KAFKA_GROUP_ID: stream-processor-group
-      KAFKA_TOPIC_INPUT: raw_readings
-      KAFKA_TOPIC_AGG_1M: aggregates_1m
-      KAFKA_TOPIC_AGG_15M: aggregates_15m
-      KAFKA_TOPIC_ALERTS: alerts
-      POSTGRES_URL: postgresql://timescale_user:timescale_password@timescaledb:5432/timescale_db
-      FLUSH_INTERVAL_1M: 60000
-      FLUSH_INTERVAL_15M: 900000
     ports:
       - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - KAFKA_BROKERS=kafka:9092
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=segs_db
+      - POSTGRES_USER=segs_user
+      - POSTGRES_PASSWORD=segs_password
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/metrics"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
-    profiles:
-      - services
 
   tariff:
     build:
-      context: ./apps/tariff
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/tariff/Dockerfile
     container_name: segs-tariff
-    networks:
-      - segs-net
-    depends_on:
-      - kafka
-      - postgres
-      - redis
+    ports:
+      - "3003:3003"
     environment:
-      NODE_ENV: production
-      KAFKA_BROKERS: kafka:9092
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      REDIS_URL: redis://redis:6379
-    command: pnpm start
-    profiles:
-      - services
-
-  alert:
-    build:
-      context: ./apps/alert
-      dockerfile: Dockerfile
-    container_name: segs-alert
-    networks:
-      - segs-net
+      - NODE_ENV=production
+      - PORT=3003
+      - KAFKA_BROKERS=kafka:9092
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=segs_db
+      - POSTGRES_USER=segs_user
+      - POSTGRES_PASSWORD=segs_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=info
     depends_on:
       kafka:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
-    environment:
-      NODE_ENV: production
-      PORT: 3004
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:9092
-      KAFKA_GROUP_ID: alert-group
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: segs_db
-      POSTGRES_USER: segs_user
-      POSTGRES_PASSWORD: segs_password
-      REDIS_URL: redis://redis:6379
+        condition: service_healthy
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  alert:
+    build:
+      context: .
+      dockerfile: apps/alert/Dockerfile
+    container_name: segs-alert
     ports:
       - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - KAFKA_BROKERS=kafka:9092
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=segs_db
+      - POSTGRES_USER=segs_user
+      - POSTGRES_PASSWORD=segs_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3004/metrics"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
-    profiles:
-      - services
 
   notification:
     build:
-      context: ./apps/notification
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/notification/Dockerfile
     container_name: segs-notification
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - KAFKA_BROKERS=kafka:9092
+      - JWT_SECRET=mysecretkey
+      - LOG_LEVEL=info
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - segs-net
-    depends_on:
-      - kafka
-      - postgres
-    environment:
-      NODE_ENV: production
-      KAFKA_BROKERS: kafka:9092
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-    command: pnpm start
-    profiles:
-      - services
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   api-gateway:
     build:
-      context: ./apps/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
     container_name: segs-api-gateway
-    networks:
-      - segs-net
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      REDIS_URL: redis://redis:6379
     ports:
       - "3000:3000"
-    command: pnpm start
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=mysecretkey
+      - JWT_EXPIRES_IN=1d
+      - POSTGRES_URL=postgresql://segs_user:segs_password@postgres:5432/segs_db
+      - TIMESCALE_URL=postgresql://segs_user:segs_password@timescaledb:5432/segs_db
+      - REDIS_URL=redis://redis:6379
+      - TARIFF_SERVICE_URL=http://tariff:3003
+      - ALERT_SERVICE_URL=http://alert:3004
+      - NOTIFICATION_SERVICE_URL=http://notification:3005
+      - LOG_LEVEL=info
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - CORS_ORIGIN=*
+    depends_on:
+      postgres:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      tariff:
+        condition: service_healthy
+    networks:
+      - segs-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  simulator:
+    build:
+      context: .
+      dockerfile: apps/simulator/Dockerfile
+    container_name: segs-simulator
+    environment:
+      - NODE_ENV=production
+      - INGESTION_URL=http://ingestion:3001
+      - NUM_METERS=100
+      - INTERVAL_MS=5000
+      - BATCH_SIZE=50
+    depends_on:
+      ingestion:
+        condition: service_healthy
+    networks:
+      - segs-net
+    restart: unless-stopped
     profiles:
-      - services
+      - simulator
+
+# ==========================================
+# NETWORKS & VOLUMES
+# ==========================================
+
+networks:
+  segs-net:
+    driver: bridge
+    name: segs-network
+
+volumes:
+  postgres-data:
+    name: segs-postgres-data
+  timescaledb-data:
+    name: segs-timescaledb-data
+  redis-data:
+    name: segs-redis-data
+  prometheus-data:
+    name: segs-prometheus-data
+  grafana-data:
+    name: segs-grafana-data

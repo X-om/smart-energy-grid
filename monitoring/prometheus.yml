@@ -1,0 +1,91 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'segs'
+    environment: 'production'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway metrics
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api-gateway:3000']
+        labels:
+          service: 'api-gateway'
+          team: 'platform'
+
+  # Ingestion service metrics
+  - job_name: 'ingestion'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ingestion:3001']
+        labels:
+          service: 'ingestion'
+          team: 'data'
+
+  # Stream processor metrics
+  - job_name: 'stream-processor'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['stream-processor:3002']
+        labels:
+          service: 'stream-processor'
+          team: 'data'
+
+  # Tariff service metrics
+  - job_name: 'tariff'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['tariff:3003']
+        labels:
+          service: 'tariff'
+          team: 'business'
+
+  # Alert service metrics
+  - job_name: 'alert'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['alert:3004']
+        labels:
+          service: 'alert'
+          team: 'operations'
+
+  # Notification service metrics
+  - job_name: 'notification'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['notification:3005']
+        labels:
+          service: 'notification'
+          team: 'operations'
+
+  # Redis exporter (optional - requires redis_exporter container)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # PostgreSQL exporter (optional - requires postgres_exporter container)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Kafka exporter (optional - requires kafka_exporter container)
+  # - job_name: 'kafka'
+  #   static_configs:
+  #     - targets: ['kafka-exporter:9308']
+
+# Alerting rules (optional)
+# rule_files:
+#   - 'alerts.yml'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']

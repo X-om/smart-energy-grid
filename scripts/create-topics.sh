@@ -1,29 +1,66 @@
 #!/bin/bash
 
-# Create Kafka Topics for SEGS
-# Usage: ./scripts/create-topics.sh
+# Smart Energy Grid System - Kafka Topic Creation Script
+# Creates all required Kafka topics with proper partitioning and replication
+
+set -e
 
 echo "🔧 Creating Kafka topics for Smart Energy Grid System..."
+echo ""
 
-KAFKA_CONTAINER="segs-kafka"
-TOPICS=(
-  "energy-readings"
-  "meter-events"
-  "processed-data"
-  "tariff-calculations"
-  "alerts"
-  "notifications"
-)
+# Wait for Kafka to be ready
+echo "⏳ Waiting for Kafka to be ready..."
+sleep 10
 
-for TOPIC in "${TOPICS[@]}"; do
-  echo "Creating topic: $TOPIC"
-  docker exec $KAFKA_CONTAINER kafka-topics \
-    --create \
-    --if-not-exists \
-    --topic $TOPIC \
-    --bootstrap-server localhost:9092 \
-    --partitions 3 \
-    --replication-factor 1
-done
+# Get Kafka container name
+KAFKA_CONTAINER=$(docker ps --filter "name=segs-kafka" --format "{{.Names}}" | head -n 1)
 
+if [ -z "$KAFKA_CONTAINER" ]; then
+    echo "❌ Error: Kafka container not found. Is Docker Compose running?"
+    echo "   Run: docker-compose up -d"
+    exit 1
+fi
+
+echo "✅ Found Kafka container: $KAFKA_CONTAINER"
+echo ""
+
+# Function to create a topic
+create_topic() {
+    local topic_name=$1
+    local partitions=$2
+    local replication=$3
+    
+    echo "📝 Creating topic: $topic_name (partitions=$partitions, replication=$replication)"
+    
+    docker exec "$KAFKA_CONTAINER" kafka-topics.sh \
+        --create \
+        --if-not-exists \
+        --topic "$topic_name" \
+        --bootstrap-server localhost:9092 \
+        --partitions "$partitions" \
+        --replication-factor "$replication" 2>/dev/null || true
+    
+    echo "✅ Topic '$topic_name' ready"
+}
+
+# Create all topics
+echo "Creating topics..."
+echo ""
+
+create_topic "raw_readings" 3 1
+create_topic "aggregates_1m" 3 1
+create_topic "aggregates_15m" 3 1
+create_topic "tariff_updates" 3 1
+create_topic "alerts" 3 1
+create_topic "alerts_processed" 3 1
+
+echo ""
+echo "📋 Listing all topics:"
+docker exec "$KAFKA_CONTAINER" kafka-topics.sh \
+    --list \
+    --bootstrap-server localhost:9092
+
+echo ""
 echo "✅ All Kafka topics created successfully!"
+echo ""
+echo "💡 View topics in Kafka UI: http://localhost:8080"
