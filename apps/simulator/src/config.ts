@@ -1,75 +1,9 @@
-/**
- * Configuration loader for the Telemetry Simulator.
- * Loads configuration from environment variables with sensible defaults.
- */
-
 import { config as loadEnv } from 'dotenv';
 import { SimulatorConfig } from './types.js';
-import { logger } from './utils/logger.js';
-
-// Load .env file
+import { validateMode, validateTarget, parseArray, parseBoolean, parseInt, parseFloat } from './utils/configHelpers.js';
 loadEnv();
 
-/**
- * Parse comma-separated string into array.
- */
-function parseArray(value: string | undefined, defaultValue: string[]): string[] {
-  if (!value) return defaultValue;
-  return value.split(',').map(s => s.trim()).filter(Boolean);
-}
-
-/**
- * Parse integer with default value.
- */
-function parseInt(value: string | undefined, defaultValue: number): number {
-  if (!value) return defaultValue;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? defaultValue : parsed;
-}
-
-/**
- * Parse float with default value.
- */
-function parseFloat(value: string | undefined, defaultValue: number): number {
-  if (!value) return defaultValue;
-  const parsed = Number.parseFloat(value);
-  return Number.isNaN(parsed) ? defaultValue : parsed;
-}
-
-/**
- * Parse boolean with default value.
- */
-function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
-  if (!value) return defaultValue;
-  return value.toLowerCase() === 'true' || value === '1';
-}
-
-/**
- * Validate simulation mode.
- */
-function validateMode(mode: string): 'normal' | 'peak' | 'outage' {
-  if (mode === 'normal' || mode === 'peak' || mode === 'outage') {
-    return mode;
-  }
-  logger.warn({ mode }, 'Invalid simulation mode, defaulting to "normal"');
-  return 'normal';
-}
-
-/**
- * Validate target mode.
- */
-function validateTarget(target: string): 'http' | 'kafka' {
-  if (target === 'http' || target === 'kafka') {
-    return target;
-  }
-  logger.warn({ target }, 'Invalid target mode, defaulting to "http"');
-  return 'http';
-}
-
-/**
- * Load and validate configuration from environment variables.
- */
-export function loadConfig(): SimulatorConfig {
+export const loadConfig = (): SimulatorConfig => {
   const config: SimulatorConfig = {
     meters: parseInt(process.env.METERS, 5000),
     interval: parseInt(process.env.INTERVAL, 10),
@@ -93,40 +27,20 @@ export function loadConfig(): SimulatorConfig {
     maxVoltage: parseInt(process.env.MAX_VOLTAGE, 240),
     baseLoadMinKw: parseFloat(process.env.BASE_LOAD_MIN_KW, 1.0),
     baseLoadMaxKw: parseFloat(process.env.BASE_LOAD_MAX_KW, 8.0),
+    availableRegions: parseArray(process.env.AVAILABLE_REGIONS, ['Pune-West', 'Mumbai-North', 'Delhi-South', 'Bangalore-East']),
   };
 
-  // Validate configuration
-  if (config.meters <= 0) {
-    throw new Error('METERS must be greater than 0');
-  }
-
-  if (config.interval <= 0) {
-    throw new Error('INTERVAL must be greater than 0');
-  }
-
-  if (config.duplicateRate < 0 || config.duplicateRate > 1) {
-    throw new Error('DUPLICATE_RATE must be between 0 and 1');
-  }
-
-  if (config.batchSize <= 0) {
-    throw new Error('BATCH_SIZE must be greater than 0');
-  }
-
-  if (config.concurrencyLimit <= 0) {
-    throw new Error('CONCURRENCY_LIMIT must be greater than 0');
-  }
-
-  if (config.regions.length === 0) {
-    throw new Error('REGIONS must contain at least one region');
-  }
+  if (config.meters <= 0) throw new Error('METERS must be greater than 0');
+  if (config.interval <= 0) throw new Error('INTERVAL must be greater than 0');
+  if (config.duplicateRate < 0 || config.duplicateRate > 1) throw new Error('DUPLICATE_RATE must be between 0 and 1');
+  if (config.batchSize <= 0) throw new Error('BATCH_SIZE must be greater than 0');
+  if (config.concurrencyLimit <= 0) throw new Error('CONCURRENCY_LIMIT must be greater than 0');
+  if (config.regions.length === 0) throw new Error('REGIONS must contain at least one region');
 
   return config;
 }
 
-/**
- * Parse command-line arguments and override config.
- */
-export function parseCliArgs(config: SimulatorConfig): SimulatorConfig {
+export const parseCliArgs = (config: SimulatorConfig): SimulatorConfig => {
   const args = process.argv.slice(2);
   const overrides: Partial<SimulatorConfig> = {};
 
@@ -135,40 +49,20 @@ export function parseCliArgs(config: SimulatorConfig): SimulatorConfig {
     const nextArg = args[i + 1];
 
     switch (arg) {
-      case '--meters':
-        if (nextArg) overrides.meters = Number.parseInt(nextArg, 10);
-        i++;
-        break;
-      case '--interval':
-        if (nextArg) overrides.interval = Number.parseInt(nextArg, 10);
-        i++;
-        break;
-      case '--mode':
-        if (nextArg) overrides.mode = validateMode(nextArg);
-        i++;
-        break;
-      case '--target':
-        if (nextArg) overrides.target = validateTarget(nextArg);
-        i++;
-        break;
-      case '--iterations':
-        if (nextArg) overrides.iterations = Number.parseInt(nextArg, 10);
-        i++;
-        break;
-      case '--help':
-        printHelp();
-        process.exit(0);
-        break;
+      case '--meters': if (nextArg) overrides.meters = Number.parseInt(nextArg, 10); i++; break;
+      case '--interval': if (nextArg) overrides.interval = Number.parseInt(nextArg, 10); i++; break;
+      case '--mode': if (nextArg) overrides.mode = validateMode(nextArg); i++; break;
+      case '--target': if (nextArg) overrides.target = validateTarget(nextArg); i++; break;
+      case '--iterations': if (nextArg) overrides.iterations = Number.parseInt(nextArg, 10); i++; break;
+      case '--help': printHelp(); process.exit(0); break;
     }
   }
-
   return { ...config, ...overrides };
 }
 
-/**
- * Print CLI help message.
- */
-function printHelp(): void {
+
+
+const printHelp = (): void => {
   console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║        Smart Energy Grid Telemetry Simulator v1.0.0           ║
