@@ -53,10 +53,10 @@ class TimescaleClient {
     try {
       const result = await this.pool.query<T>(text, params);
       const duration = Date.now() - start;
-      logger.debug('Executed TimescaleDB query', { 
-        query: text.substring(0, 100), 
+      logger.debug('Executed TimescaleDB query', {
+        query: text.substring(0, 100),
         duration,
-        rows: result.rowCount 
+        rows: result.rowCount
       });
       return result;
     } catch (error) {

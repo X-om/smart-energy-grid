@@ -53,10 +53,10 @@ class PostgresClient {
     try {
       const result = await this.pool.query<T>(text, params);
       const duration = Date.now() - start;
-      logger.debug('Executed PostgreSQL query', { 
-        query: text.substring(0, 100), 
+      logger.debug('Executed PostgreSQL query', {
+        query: text.substring(0, 100),
         duration,
-        rows: result.rowCount 
+        rows: result.rowCount
       });
       return result;
     } catch (error) {

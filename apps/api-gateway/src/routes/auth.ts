@@ -93,9 +93,9 @@ router.post(
       const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
       if (!isPasswordValid) {
-        logger.warn('Login attempt with invalid password', { 
+        logger.warn('Login attempt with invalid password', {
           email,
-          userId: user.user_id 
+          userId: user.user_id
         });
         return sendUnauthorized(res, 'Invalid email or password');
       }
