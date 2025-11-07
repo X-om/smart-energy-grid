@@ -5,19 +5,30 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node --esm src/index.ts",
+    "dev": "pnpm build && node dist/index.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src/**/*.ts",
     "test": "jest",
+    "test:dry": "pnpm build && node test-dry-run.js",
+    "test:integration": "pnpm build && node test-integration.js",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@segs/shared-types": "workspace:*",
-    "@segs/utils": "workspace:*"
+    "@segs/utils": "workspace:*",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "kafkajs": "^2.2.4",
+    "p-limit": "^5.0.0",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
 }
