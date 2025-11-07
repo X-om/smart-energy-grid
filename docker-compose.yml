@@ -1,0 +1,244 @@
+version: '3.9'
+
+networks:
+  segs-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  timescaledb-data:
+  kafka-data:
+  zookeeper-data:
+  redis-data:
+
+services:
+  # Infrastructure Services
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: segs-zookeeper
+    networks:
+      - segs-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: segs-kafka
+    depends_on:
+      - zookeeper
+    networks:
+      - segs-net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: segs-kafka-ui
+    depends_on:
+      - kafka
+    networks:
+      - segs-net
+    environment:
+      KAFKA_CLUSTERS_0_NAME: segs-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: segs-postgres
+    networks:
+      - segs-net
+    environment:
+      POSTGRES_USER: segs_user
+      POSTGRES_PASSWORD: segs_password
+      POSTGRES_DB: segs_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U segs_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: segs-timescaledb
+    networks:
+      - segs-net
+    environment:
+      POSTGRES_USER: timescale_user
+      POSTGRES_PASSWORD: timescale_password
+      POSTGRES_DB: timescale_db
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timescale_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: segs-redis
+    networks:
+      - segs-net
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  # Application Services (Placeholders)
+  
+  simulator:
+    build:
+      context: ./apps/simulator
+      dockerfile: Dockerfile
+    container_name: segs-simulator
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+    command: pnpm start
+    profiles:
+      - services
+
+  ingestion:
+    build:
+      context: ./apps/ingestion
+      dockerfile: Dockerfile
+    container_name: segs-ingestion
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
+    command: pnpm start
+    profiles:
+      - services
+
+  stream-processor:
+    build:
+      context: ./apps/stream-processor
+      dockerfile: Dockerfile
+    container_name: segs-stream-processor
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+      - redis
+      - timescaledb
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis://redis:6379
+      TIMESCALE_URL: postgresql://timescale_user:timescale_password@timescaledb:5432/timescale_db
+    command: pnpm start
+    profiles:
+      - services
+
+  tariff:
+    build:
+      context: ./apps/tariff
+      dockerfile: Dockerfile
+    container_name: segs-tariff
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
+      REDIS_URL: redis://redis:6379
+    command: pnpm start
+    profiles:
+      - services
+
+  alert:
+    build:
+      context: ./apps/alert
+      dockerfile: Dockerfile
+    container_name: segs-alert
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis://redis:6379
+    command: pnpm start
+    profiles:
+      - services
+
+  notification:
+    build:
+      context: ./apps/notification
+      dockerfile: Dockerfile
+    container_name: segs-notification
+    networks:
+      - segs-net
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      NODE_ENV: production
+      KAFKA_BROKERS: kafka:9092
+      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
+    command: pnpm start
+    profiles:
+      - services
+
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: segs-api-gateway
+    networks:
+      - segs-net
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    command: pnpm start
+    profiles:
+      - services
