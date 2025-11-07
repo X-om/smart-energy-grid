@@ -34,7 +34,7 @@ const config = {
 // Service instances
 let kafkaProducer: KafkaProducerService;
 let dedupeService: DeduplicationService;
-let server: any;
+let server: import('http').Server;
 
 /**
  * Initialize services

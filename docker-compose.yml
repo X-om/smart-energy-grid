@@ -149,21 +149,33 @@ services:
 
   stream-processor:
     build:
-      context: ./apps/stream-processor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/stream-processor/Dockerfile
     container_name: segs-stream-processor
     networks:
       - segs-net
     depends_on:
-      - kafka
-      - redis
-      - timescaledb
+      kafka:
+        condition: service_started
+      timescaledb:
+        condition: service_healthy
     environment:
       NODE_ENV: production
+      PORT: 3002
+      LOG_LEVEL: info
       KAFKA_BROKERS: kafka:9092
-      REDIS_URL: redis://redis:6379
-      TIMESCALE_URL: postgresql://timescale_user:timescale_password@timescaledb:5432/timescale_db
-    command: pnpm start
+      KAFKA_CLIENT_ID: stream-processor
+      KAFKA_GROUP_ID: stream-processor-group
+      KAFKA_TOPIC_INPUT: raw_readings
+      KAFKA_TOPIC_AGG_1M: aggregates_1m
+      KAFKA_TOPIC_AGG_15M: aggregates_15m
+      KAFKA_TOPIC_ALERTS: alerts
+      POSTGRES_URL: postgresql://timescale_user:timescale_password@timescaledb:5432/timescale_db
+      FLUSH_INTERVAL_1M: 60000
+      FLUSH_INTERVAL_15M: 900000
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
     profiles:
       - services
 
