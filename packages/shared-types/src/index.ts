@@ -1,32 +1,30 @@
 /**
- * Shared TypeScript types and interfaces for the SEGS system
+ * @segs/shared-types
+ * 
+ * Canonical type definitions for the Smart Energy Grid Management System (SEGS).
+ * This package provides type safety and shared contracts across all microservices.
+ * 
+ * @module @segs/shared-types
+ * @version 1.0.0
  */
 
-// Placeholder types - to be expanded during implementation
-export interface BaseEntity {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Telemetry data models
+export * from './telemetry.js';
 
-export interface EnergyReading extends BaseEntity {
-  meterId: string;
-  value: number;
-  unit: string;
-  timestamp: Date;
-}
+// Aggregate analytics models
+export * from './aggregates.js';
 
-export interface Alert extends BaseEntity {
-  type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  metadata?: Record<string, unknown>;
-}
+// Tariff pricing models
+export * from './tariff.js';
 
-export interface TariffPlan extends BaseEntity {
-  name: string;
-  ratePerKwh: number;
-  currency: string;
-}
+// Alert and notification models
+export * from './alert.js';
 
-console.log('📦 [SHARED-TYPES] Type definitions loaded');
+// User and meter metadata models
+export * from './user.js';
+
+// Billing and invoice models
+export * from './billing.js';
+
+// Common utility types and interfaces
+export * from './common.js';
