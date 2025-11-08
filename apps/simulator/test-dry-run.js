@@ -1,9 +1,3 @@
-#!/usr/bin/env node
-
-/**
- * Dry-run test script for Telemetry Simulator
- * Tests data generation without network calls
- */
 
 import { initializeMeters, generateReadings } from './dist/generator.js';
 import { isTelemetryReading } from '@segs/shared-types';
@@ -12,7 +6,6 @@ console.log('\n╔════════════════════�
 console.log('║         Telemetry Simulator - Dry Run Test                  ║');
 console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
-// Mock configuration
 const mockConfig = {
   meters: 10,
   regions: ['Pune-West', 'Mumbai-North', 'Delhi-South', 'Bangalore-East'],
@@ -22,7 +15,7 @@ const mockConfig = {
   maxVoltage: 240,
   interval: 10,
   mode: 'normal',
-  duplicateRate: 0.05, // 5% duplicates for testing
+  duplicateRate: 0.05,
 };
 
 console.log('📋 Test Configuration:');

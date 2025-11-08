@@ -2,36 +2,36 @@ import { TelemetryReading } from '@segs/shared-types';
 
 // * Configuration for the simulator.
 export interface SimulatorConfig {
-  meters: number; // Number of virtual meters to simulate
-  interval: number; // Interval between readings in seconds
-  mode: SimulationMode; // Simulation mode
-  target: TargetMode; // Target destination for readings
-  ingestionUrl: string; // HTTP ingestion endpoint URL
-  kafkaBrokers: Array<string>; // Kafka broker addresses
-  kafkaTopic: string; // Kafka topic name
+  meters: number;  
+  interval: number;  
+  mode: SimulationMode;  
+  target: TargetMode;  
+  ingestionUrl: string; 
+  kafkaBrokers: Array<string>;  
+  kafkaTopic: string;  
 
-  kafkaClientId: string; // Kafka client ID
+  kafkaClientId: string;  
 
-  availableRegions: Array<string>; // Available regions
+  availableRegions: Array<string>;  
   regions: Array<string>;
-  duplicateRate: number; // Rate of duplicate readings (0.0 to 1.0)
-  batchSize: number; // Batch size for HTTP requests
-  concurrencyLimit: number; // Maximum concurrent requests
-  iterations: number; // Number of iterations (0 = infinite)
+  duplicateRate: number;  
+  batchSize: number;  
+  concurrencyLimit: number;  
+  iterations: number;  
 
-  logLevel: string; // Log level
+  logLevel: string;  
 
-  metricsEnabled: boolean; // Whether metrics are enabled
-  metricsPort: number; // Metrics server port
+  metricsEnabled: boolean;  
+  metricsPort: number;  
 
-  retryAttempts: number; // Number of retry attempts
-  retryDelayMs: number; // Initial retry delay in milliseconds
+  retryAttempts: number;  
+  retryDelayMs: number;  
 
-  minVoltage: number; // Minimum voltage
-  maxVoltage: number; // Maximum voltage
+  minVoltage: number;  
+  maxVoltage: number;  
 
-  baseLoadMinKw: number; // Minimum base load in kW
-  baseLoadMaxKw: number; // Maximum base load in kW
+  baseLoadMinKw: number;  
+  baseLoadMaxKw: number;  
 }
 
 

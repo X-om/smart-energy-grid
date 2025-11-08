@@ -1,26 +1,10 @@
-/**
- * Prometheus Metrics for Ingestion Service
- * 
- * Tracks key performance indicators:
- * - Request counts (total, success, errors)
- * - Kafka publish latency
- * - Deduplication statistics
- * - HTTP response times
- */
-
 import { Registry, Counter, Histogram, Gauge } from 'prom-client';
 
-// Create a custom registry
 export const register = new Registry();
 
-// Default labels for all metrics
-register.setDefaultLabels({
-  service: 'ingestion',
-});
+register.setDefaultLabels({ service: 'ingestion', });
 
-/**
- * HTTP Request Metrics
- */
+// * HTTP Request Metrics
 export const httpRequestsTotal = new Counter({
   name: 'ingestion_requests_total',
   help: 'Total number of HTTP requests received',
@@ -36,9 +20,7 @@ export const httpRequestDuration = new Histogram({
   registers: [register],
 });
 
-/**
- * Ingestion Success/Error Metrics
- */
+// * Ingestion Success/Error Metrics
 export const ingestionSuccessTotal = new Counter({
   name: 'ingestion_success_total',
   help: 'Total number of successfully ingested readings',
@@ -53,19 +35,14 @@ export const ingestionErrorsTotal = new Counter({
   registers: [register],
 });
 
-/**
- * Validation Metrics
- */
+// * Validation Metrics
 export const validationErrorsTotal = new Counter({
   name: 'ingestion_validation_errors_total',
   help: 'Total number of validation errors',
-  labelNames: ['field'],
-  registers: [register],
+  labelNames: ['field'], registers: [register]
 });
 
-/**
- * Deduplication Metrics
- */
+// * Deduplication Metrics
 export const deduplicatedMessagesTotal = new Counter({
   name: 'deduplicated_messages_total',
   help: 'Total number of duplicate messages filtered',
@@ -79,9 +56,7 @@ export const deduplicationCheckDuration = new Histogram({
   registers: [register],
 });
 
-/**
- * Kafka Producer Metrics
- */
+// * Kafka Producer Metrics
 export const kafkaProduceLatency = new Histogram({
   name: 'kafka_produce_latency_ms',
   help: 'Kafka message publish latency in milliseconds',
@@ -104,9 +79,7 @@ export const kafkaPublishErrors = new Counter({
   registers: [register],
 });
 
-/**
- * Batch Processing Metrics
- */
+// * Batch Processing Metrics
 export const batchSizeHistogram = new Histogram({
   name: 'ingestion_batch_size',
   help: 'Distribution of batch sizes received',
@@ -122,9 +95,7 @@ export const batchProcessingDuration = new Histogram({
   registers: [register],
 });
 
-/**
- * Service Health Metrics
- */
+// * Service Health Metrics
 export const redisConnectionStatus = new Gauge({
   name: 'redis_connection_status',
   help: 'Redis connection status (1 = connected, 0 = disconnected)',
@@ -143,9 +114,7 @@ export const serviceUptime = new Gauge({
   registers: [register],
 });
 
-/**
- * Helper function to determine batch size range label
- */
+// * Helper function to determine batch size range label
 export function getBatchSizeRange(size: number): string {
   if (size <= 10) return '1-10';
   if (size <= 50) return '11-50';
@@ -155,21 +124,16 @@ export function getBatchSizeRange(size: number): string {
   return '501+';
 }
 
-/**
- * Update service uptime metric
- */
+// * Update service uptime metric
 const startTime = Date.now();
 export function updateUptime() {
   const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
   serviceUptime.set(uptimeSeconds);
 }
 
-// Update uptime every 10 seconds
 setInterval(updateUptime, 10000);
 
-/**
- * Initialize metrics with default values
- */
+// * Initialize metrics with default values
 export function initializeMetrics() {
   // Set initial connection statuses
   redisConnectionStatus.set(0);
