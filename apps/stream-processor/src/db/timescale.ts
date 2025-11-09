@@ -20,6 +20,18 @@ export interface Aggregate1m {
 }
 export interface Aggregate15m extends Aggregate1m { }
 
+export interface RegionalAggregate1m {
+  region: string;
+  timestamp: string;
+  meterCount: number;
+  totalConsumption: number;
+  avgConsumption: number;
+  maxConsumption: number;
+  minConsumption: number;
+  loadPercentage: number;
+  activeMeters: Array<string>;
+}
+
 export class TimescaleDBService {
   private static instance: TimescaleDBService;
   private pool: Pool;

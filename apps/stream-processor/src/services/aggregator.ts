@@ -1,7 +1,8 @@
 import type { TelemetryReading } from '@segs/shared-types';
 import { get1MinuteBucket, get15MinuteBucket } from '../utils/time.js';
 import { createLogger } from '../utils/logger.js';
-import type { Aggregate1m, Aggregate15m } from '../db/timescale.js';
+import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale.js';
+import { config } from '../config/env.js';
 
 const logger = createLogger('aggregator');
 
@@ -32,6 +33,15 @@ interface StatSummary {
     meters: number;
     readings: number;
   };
+}
+
+interface RegionalDataValue {
+  region: string;
+  meterIds: Set<string>;
+  totalPowerSum: number;
+  meterCount: number;
+  maxPower: number;
+  minPower: number;
 }
 
 type WindowsMap = Map<string, Map<string, AggregateWindow>>;
@@ -110,6 +120,46 @@ export class AggregatorService {
       }
     }
     return aggregates;
+  }
+
+  // * Get regional aggregates ready to flush (one per region)
+  getRegionalAggregates1m(): Array<RegionalAggregate1m> {
+    const currentBucket = get1MinuteBucket(new Date());
+    const regionalData = new Map<string, RegionalDataValue>();
+
+    for (const [bucket, meterMap] of this.windows1m.entries()) {
+      if (bucket < currentBucket) {
+        for (const [meterId, window] of meterMap.entries()) {
+          if (!regionalData.has(window.region))
+            regionalData.set(window.region, { region: window.region, meterIds: new Set(), totalPowerSum: 0, meterCount: 0, maxPower: 0, minPower: Infinity });
+
+          const regional = regionalData.get(window.region)!;
+          const avgPower = window.powerSum / window.count;
+          regional.meterIds.add(meterId);
+          regional.totalPowerSum += avgPower;
+          regional.meterCount++;
+          regional.maxPower = Math.max(regional.maxPower, window.maxPower);
+          regional.minPower = Math.min(regional.minPower, avgPower);
+        }
+      }
+    }
+
+    return Array.from(regionalData.values()).map((data) => {
+      const capacity = config.regionalCapacity[data.region] || 1000000;
+      const loadPercentage = (data.totalPowerSum / capacity) * 100;
+
+      return {
+        region: data.region,
+        timestamp: new Date().toISOString(),
+        meterCount: data.meterCount,
+        totalConsumption: data.totalPowerSum,
+        avgConsumption: data.totalPowerSum / data.meterCount,
+        maxConsumption: data.maxPower,
+        minConsumption: data.minPower === Infinity ? 0 : data.minPower,
+        loadPercentage: parseFloat(loadPercentage.toFixed(2)),
+        activeMeters: Array.from(data.meterIds),
+      };
+    });
   }
 
   // * Get all 15-minute aggregates that are ready to flush

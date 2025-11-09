@@ -10,6 +10,11 @@ interface KafkaConfig {
   topicAgg1m: string;
   topicAgg15m: string;
   topicAlerts: string;
+  topicRegional1m: string;
+}
+
+interface RegionalCapacityConfig {
+  [region: string]: number;
 }
 
 interface PostgresConfig {
@@ -22,6 +27,7 @@ interface Config {
   postgres: PostgresConfig;
   flushInterval1m: number;
   flushInterval15m: number;
+  regionalCapacity: RegionalCapacityConfig;
 }
 
 const parseEnv = (): Config => ({
@@ -34,12 +40,25 @@ const parseEnv = (): Config => ({
     topicAgg1m: process.env.KAFKA_TOPIC_AGG_1M || 'aggregates_1m',
     topicAgg15m: process.env.KAFKA_TOPIC_AGG_15M || 'aggregates_15m',
     topicAlerts: process.env.KAFKA_TOPIC_ALERTS || 'alerts',
+    topicRegional1m: process.env.KAFKA_TOPIC_REGIONAL_1M || 'aggregates_1m_regional',
   },
   postgres: {
     url: process.env.POSTGRES_URL || 'postgres://postgres:password@localhost:5432/segs',
   },
   flushInterval1m: parseInt(process.env.FLUSH_INTERVAL_1M || '60000', 10),
   flushInterval15m: parseInt(process.env.FLUSH_INTERVAL_15M || '900000', 10),
+  regionalCapacity: {
+    'Mumbai-North': 320000,
+    'Mumbai-South': 288000,
+    'Delhi-North': 352000,
+    'Delhi-South': 320000,
+    'Bangalore-East': 304000,
+    'Bangalore-West': 272000,
+    'Pune-East': 224000,
+    'Pune-West': 208000,
+    'Hyderabad-Central': 256000,
+    'Chennai-North': 240000,
+  },
 });
 
 export const config = parseEnv();

@@ -1,6 +1,6 @@
 import { Kafka, Producer, Partitioners } from 'kafkajs';
 import { createLogger } from '../utils/logger.js';
-import type { Aggregate1m, Aggregate15m } from '../db/timescale.js';
+import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale.js';
 
 const logger = createLogger('kafka-producer');
 
@@ -114,6 +114,37 @@ export class KafkaProducerService {
       return aggregates.length;
     } catch (error) {
       logger.error({ error, count: aggregates.length }, 'Failed to publish 15m aggregates');
+      return 0;
+    }
+  }
+
+  // * Publish regional 1-minute aggregates
+  async publishRegionalAggregates1m(aggregates: Array<RegionalAggregate1m>, topic: string): Promise<number> {
+    try {
+      if (!this.connected || aggregates.length === 0) return 0;
+
+      const messages = aggregates.map((agg) => ({
+        key: agg.region,
+        value: JSON.stringify({
+          region: agg.region,
+          timestamp: agg.timestamp,
+          meter_count: agg.meterCount,
+          total_consumption: agg.totalConsumption,
+          avg_consumption: agg.avgConsumption,
+          max_consumption: agg.maxConsumption,
+          min_consumption: agg.minConsumption,
+          load_percentage: agg.loadPercentage,
+          active_meters: agg.activeMeters,
+        }),
+        headers: { type: 'regional_1m_aggregate', region: agg.region },
+      }));
+
+      await this.producer.send({ topic, messages });
+      logger.debug({ count: aggregates.length, topic }, 'Published regional 1m aggregates');
+
+      return aggregates.length;
+    } catch (error) {
+      logger.error({ error, count: aggregates.length }, 'Failed to publish regional 1m aggregates');
       return 0;
     }
   }

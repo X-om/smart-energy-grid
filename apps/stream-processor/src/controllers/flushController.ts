@@ -30,12 +30,21 @@ export const flush1mAggregates = async (): Promise<void> => {
     const published = await kafkaProducer.publishAggregates1m(aggregates, config.kafka.topicAgg1m);
 
     streamAggregatesPublishedTotal.inc({ window_type: '1m' }, published);
+
+    // Publish regional aggregates
+    const regionalAggregates = aggregator.getRegionalAggregates1m();
+    if (regionalAggregates.length > 0) {
+      const regionalPublished = await kafkaProducer.publishRegionalAggregates1m(regionalAggregates, config.kafka.topicRegional1m);
+      streamAggregatesPublishedTotal.inc({ window_type: '1m_regional' }, regionalPublished);
+      logger.debug({ count: regionalPublished }, 'Published regional 1m aggregates');
+    }
+
     aggregator.clearFlushedWindows1m();
 
     const duration = Date.now() - startTime;
     streamAggregationFlushDuration.observe({ window_type: '1m' }, duration);
 
-    logger.info({ count: aggregates.length, dbDuration, duration }, 'Flushed 1m aggregates');
+    logger.info({ count: aggregates.length, regionalCount: regionalAggregates.length, dbDuration, duration }, 'Flushed 1m aggregates');
   } catch (error) {
     logger.error({ error }, 'Error flushing 1m aggregates');
   }
