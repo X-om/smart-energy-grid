@@ -1,15 +1,9 @@
-/**
- * Override Handler Service
- * 
- * Handles manual tariff override requests from operators
- */
-
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../utils/logger.js';
-import type { TariffUpdate } from '../kafka/producer.js';
-import type { PostgresService } from '../db/postgres.js';
-import type { RedisCacheService } from '../cache/redisClient.js';
-import type { KafkaProducerService } from '../kafka/producer.js';
+import type { TariffUpdate } from './kafkaProducerService.js';
+import type { PostgresService } from './postgresService.js';
+import type { RedisCacheService } from './redisCacheService.js';
+import type { KafkaProducerService } from './kafkaProducerService.js';
 
 const logger = createLogger('override-handler');
 
@@ -30,53 +24,37 @@ export interface OverrideResponse {
 }
 
 export class OverrideHandlerService {
-  constructor(
+  private static instance: OverrideHandlerService;
+
+  private constructor(
     private db: PostgresService,
     private cache: RedisCacheService,
     private producer: KafkaProducerService,
     private outputTopic: string
   ) { }
 
-  /**
-   * Validate override request
-   */
+  static getInstance(db?: PostgresService, cache?: RedisCacheService, producer?: KafkaProducerService, outputTopic?: string): OverrideHandlerService {
+    if (!OverrideHandlerService.instance) {
+      if (!db || !cache || !producer || !outputTopic) throw new Error('All dependencies required for first initialization');
+      OverrideHandlerService.instance = new OverrideHandlerService(db, cache, producer, outputTopic);
+    }
+    return OverrideHandlerService.instance;
+  }
+
   private validateRequest(request: OverrideRequest): { valid: boolean; error?: string } {
-    // Validate region
-    if (!request.region || request.region.trim().length === 0) {
-      return { valid: false, error: 'Region is required' };
-    }
-
-    // Validate price
-    if (typeof request.newPrice !== 'number' || request.newPrice <= 0) {
-      return { valid: false, error: 'Price must be a positive number' };
-    }
-
-    // Validate price range (₹0.50 - ₹20.00 per kWh)
-    if (request.newPrice < 0.5 || request.newPrice > 20.0) {
-      return { valid: false, error: 'Price must be between ₹0.50 and ₹20.00 per kWh' };
-    }
-
+    if (!request.region || request.region.trim().length === 0) return { valid: false, error: 'Region is required' };
+    if (typeof request.newPrice !== 'number' || request.newPrice <= 0) return { valid: false, error: 'Price must be a positive number' };
+    if (request.newPrice < 0.5 || request.newPrice > 20.0) return { valid: false, error: 'Price must be between ₹0.50 and ₹20.00 per kWh' };
     return { valid: true };
   }
 
-  /**
-   * Handle manual tariff override
-   */
   async handleOverride(request: OverrideRequest): Promise<OverrideResponse> {
     try {
-      // Validate request
       const validation = this.validateRequest(request);
-      if (!validation.valid) {
-        return {
-          success: false,
-          message: validation.error || 'Invalid request',
-        };
-      }
+      if (!validation.valid) return { success: false, message: validation.error || 'Invalid request' };
 
-      // Get current price from cache
       const oldPrice = await this.cache.getTariff(request.region);
 
-      // Create tariff update
       const tariffUpdate: TariffUpdate = {
         tariffId: uuidv4(),
         region: request.region,
@@ -87,7 +65,6 @@ export class OverrideHandlerService {
         oldPrice: oldPrice || undefined,
       };
 
-      // Save to database
       await this.db.insertTariff({
         tariffId: tariffUpdate.tariffId,
         region: tariffUpdate.region,
@@ -97,22 +74,10 @@ export class OverrideHandlerService {
         triggeredBy: tariffUpdate.triggeredBy,
       });
 
-      // Update cache
       await this.cache.setTariff(request.region, request.newPrice);
-
-      // Publish to Kafka
       await this.producer.publishTariffUpdate(tariffUpdate, this.outputTopic);
 
-      logger.info(
-        {
-          region: request.region,
-          oldPrice,
-          newPrice: request.newPrice,
-          operatorId: request.operatorId,
-          reason: request.reason,
-        },
-        'Manual tariff override applied'
-      );
+      logger.info({ region: request.region, oldPrice, newPrice: request.newPrice, operatorId: request.operatorId, reason: request.reason }, 'Manual tariff override applied');
 
       return {
         success: true,
@@ -124,32 +89,20 @@ export class OverrideHandlerService {
       };
     } catch (error) {
       logger.error({ error, request }, 'Failed to apply tariff override');
-
-      return {
-        success: false,
-        message: 'Internal server error',
-      };
+      return { success: false, message: 'Internal server error' };
     }
   }
 
-  /**
-   * Get current tariff for a region
-   */
   async getCurrentTariff(region: string): Promise<number | null> {
     try {
-      // Try cache first
       let price = await this.cache.getTariff(region);
-
       if (price === null) {
-        // Fallback to database
         const tariff = await this.db.getCurrentTariff(region);
         if (tariff) {
           price = tariff.pricePerKwh;
-          // Update cache
           await this.cache.setTariff(region, price);
         }
       }
-
       return price;
     } catch (error) {
       logger.error({ error, region }, 'Failed to get current tariff');
@@ -157,9 +110,6 @@ export class OverrideHandlerService {
     }
   }
 
-  /**
-   * Get tariff history for a region
-   */
   async getTariffHistory(region: string, limit: number = 10) {
     try {
       return await this.db.getTariffHistory(region, limit);

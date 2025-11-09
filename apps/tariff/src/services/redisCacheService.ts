@@ -1,58 +1,43 @@
-/**
- * Redis Cache Client
- * 
- * Manages caching of current tariff prices per region
- */
-
 import { createClient, RedisClientType } from 'redis';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('redis');
 
 export class RedisCacheService {
+  private static instance: RedisCacheService;
   private client: RedisClientType;
   private connected: boolean = false;
   private readonly TARIFF_PREFIX = 'tariff:';
-  private readonly TTL_SECONDS = 86400; // 24 hours
+  private readonly TTL_SECONDS = 86400;
 
-  constructor(redisUrl: string) {
+  private constructor(redisUrl: string) {
     this.client = createClient({
-      url: redisUrl,
-      socket: {
+      url: redisUrl, socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {
             logger.error('Max Redis reconnection attempts reached');
             return new Error('Max reconnection attempts reached');
           }
-          // Exponential backoff: 100ms, 200ms, 400ms, ...
           return Math.min(retries * 100, 3000);
         },
       },
     });
 
-    // Event handlers
-    this.client.on('error', (err) => {
-      logger.error({ error: err }, 'Redis client error');
-    });
-
-    this.client.on('connect', () => {
-      logger.info('Redis client connected');
-    });
-
-    this.client.on('ready', () => {
-      this.connected = true;
-      logger.info('Redis client ready');
-    });
-
-    this.client.on('end', () => {
-      this.connected = false;
-      logger.info('Redis client disconnected');
-    });
+    this.client.on('error', (err) => logger.error({ error: err }, 'Redis client error'));
+    this.client.on('connect', () => logger.info('Redis client connected'));
+    this.client.on('ready', () => { this.connected = true; logger.info('Redis client ready'); });
+    this.client.on('end', () => { this.connected = false; logger.info('Redis client disconnected'); });
   }
 
-  /**
-   * Connect to Redis
-   */
+  static getInstance(redisUrl?: string): RedisCacheService {
+    if (!RedisCacheService.instance) {
+      if (!redisUrl) throw new Error('Redis URL required for first initialization');
+      RedisCacheService.instance = new RedisCacheService(redisUrl);
+    }
+    return RedisCacheService.instance;
+  }
+
+
   async connect(): Promise<void> {
     try {
       await this.client.connect();
@@ -63,13 +48,14 @@ export class RedisCacheService {
     }
   }
 
-  /**
-   * Set tariff for a region
-   */
-  async setTariff(region: string, pricePerKwh: number): Promise<void> {
+  public getRegionsTariffKey(region: string): string {
+    return `${this.TARIFF_PREFIX}${region}`;
+  }
+
+  public async setTariff(region: string, pricePerKwh: number): Promise<void> {
     try {
-      const key = `${this.TARIFF_PREFIX}${region}`;
-      await this.client.setEx(key, this.TTL_SECONDS, pricePerKwh.toString());
+      const key = this.getRegionsTariffKey(region);
+      await this.client.setEx(key, this.TTL_SECONDS, String(pricePerKwh));
 
       logger.debug({ region, price: pricePerKwh }, 'Tariff cached in Redis');
     } catch (error) {
@@ -78,39 +64,26 @@ export class RedisCacheService {
     }
   }
 
-  /**
-   * Get tariff for a region
-   */
-  async getTariff(region: string): Promise<number | null> {
+  public async getTariff(region: string): Promise<number | null> {
     try {
-      const key = `${this.TARIFF_PREFIX}${region}`;
+      const key = this.getRegionsTariffKey(region);
       const value = await this.client.get(key);
 
-      if (!value) {
-        return null;
-      }
-
-      return parseFloat(value);
+      return value ? parseFloat(value) : null;
     } catch (error) {
       logger.error({ error, region }, 'Failed to get tariff from Redis');
       throw error;
     }
   }
 
-  /**
-   * Preload tariffs from database
-   */
-  async preloadTariffs(tariffMap: Map<string, number>): Promise<void> {
+  public async preloadTariffs(tariffMap: Map<string, number>): Promise<void> {
     try {
       const pipeline = this.client.multi();
-
       for (const [region, price] of tariffMap.entries()) {
-        const key = `${this.TARIFF_PREFIX}${region}`;
-        pipeline.setEx(key, this.TTL_SECONDS, price.toString());
+        const key = this.getRegionsTariffKey(region);
+        pipeline.setEx(key, this.TTL_SECONDS, String(price));
       }
-
       await pipeline.exec();
-
       logger.info({ count: tariffMap.size }, 'Preloaded tariffs into Redis');
     } catch (error) {
       logger.error({ error }, 'Failed to preload tariffs');
@@ -118,22 +91,15 @@ export class RedisCacheService {
     }
   }
 
-  /**
-   * Get all tariffs (for debugging)
-   */
-  async getAllTariffs(): Promise<Map<string, number>> {
+  public async getAllTariffs(): Promise<Map<string, number>> {
     try {
       const keys = await this.client.keys(`${this.TARIFF_PREFIX}*`);
       const tariffMap = new Map<string, number>();
-
       for (const key of keys) {
         const region = key.replace(this.TARIFF_PREFIX, '');
         const value = await this.client.get(key);
-        if (value) {
-          tariffMap.set(region, parseFloat(value));
-        }
+        if (value) tariffMap.set(region, parseFloat(value));
       }
-
       return tariffMap;
     } catch (error) {
       logger.error({ error }, 'Failed to get all tariffs from Redis');
@@ -141,14 +107,10 @@ export class RedisCacheService {
     }
   }
 
-  /**
-   * Delete tariff for a region
-   */
-  async deleteTariff(region: string): Promise<void> {
+  public async deleteTariff(region: string): Promise<void> {
     try {
-      const key = `${this.TARIFF_PREFIX}${region}`;
+      const key = this.getRegionsTariffKey(region);
       await this.client.del(key);
-
       logger.debug({ region }, 'Tariff deleted from Redis');
     } catch (error) {
       logger.error({ error, region }, 'Failed to delete tariff from Redis');
@@ -156,17 +118,9 @@ export class RedisCacheService {
     }
   }
 
-  /**
-   * Get connection status
-   */
-  isConnected(): boolean {
-    return this.connected;
-  }
+  public isConnected(): boolean { return this.connected; }
 
-  /**
-   * Close Redis connection
-   */
-  async disconnect(): Promise<void> {
+  public async disconnect(): Promise<void> {
     await this.client.quit();
     this.connected = false;
     logger.info('Disconnected from Redis');
