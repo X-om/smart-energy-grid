@@ -25,18 +25,25 @@ export interface AnomalyDetectorConfig {
  * Compares current readings against historical baselines
  */
 export class AnomalyDetectorService {
+  private static instance: AnomalyDetectorService;
   private config: AnomalyDetectorConfig;
   private db: TimescaleDBService;
-  private baselineCache: Map<string, number> = new Map(); // meterId -> baseline avg power
-  private readingCounts: Map<string, number> = new Map(); // meterId -> reading count
+  private baselineCache: Map<string, number> = new Map();
+  private readingCounts: Map<string, number> = new Map();
 
-  constructor(db: TimescaleDBService, config?: Partial<AnomalyDetectorConfig>) {
+  private constructor(db: TimescaleDBService, config?: Partial<AnomalyDetectorConfig>) {
     this.db = db;
     this.config = {
-      spikeThreshold: config?.spikeThreshold ?? 1.0, // 100% increase
-      dropThreshold: config?.dropThreshold ?? 0.5, // 50% decrease
+      spikeThreshold: config?.spikeThreshold ?? 1.0,
+      dropThreshold: config?.dropThreshold ?? 0.5,
       minSampleSize: config?.minSampleSize ?? 10,
     };
+  }
+
+  static getInstance(db?: TimescaleDBService, config?: Partial<AnomalyDetectorConfig>): AnomalyDetectorService {
+    if (!AnomalyDetectorService.instance && db) AnomalyDetectorService.instance = new AnomalyDetectorService(db, config);
+    if (!AnomalyDetectorService.instance) throw new Error('AnomalyDetectorService must be initialized with db first');
+    return AnomalyDetectorService.instance;
   }
 
   /**

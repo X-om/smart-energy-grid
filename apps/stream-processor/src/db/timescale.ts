@@ -29,18 +29,24 @@ export interface Aggregate1m {
 export interface Aggregate15m extends Aggregate1m { }
 
 export class TimescaleDBService {
+  private static instance: TimescaleDBService;
   private pool: Pool;
   private connected: boolean = false;
 
-  constructor(connectionString: string) {
+  private constructor(connectionString: string) {
     this.pool = new Pool({
       connectionString,
-      max: 20, // Maximum pool size
+      max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     });
-
     this.setupEventHandlers();
+  }
+
+  static getInstance(connectionString?: string): TimescaleDBService {
+    if (!TimescaleDBService.instance && connectionString) TimescaleDBService.instance = new TimescaleDBService(connectionString);
+    if (!TimescaleDBService.instance) throw new Error('TimescaleDBService must be initialized with connectionString first');
+    return TimescaleDBService.instance;
   }
 
   /**

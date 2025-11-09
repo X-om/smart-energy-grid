@@ -1,10 +1,3 @@
-/**
- * Kafka Consumer Service
- * 
- * Consumes raw telemetry readings from the raw_readings topic
- * and passes them to the aggregator for processing.
- */
-
 import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
 import type { TelemetryReading } from '@segs/shared-types';
 import { createLogger } from '../utils/logger.js';
@@ -12,15 +5,15 @@ import { createLogger } from '../utils/logger.js';
 const logger = createLogger('kafka-consumer');
 
 export interface KafkaConsumerConfig {
-  brokers: string[];
+  brokers: Array<string>;
   clientId: string;
   groupId: string;
   topic: string;
 }
-
 export type MessageHandler = (reading: TelemetryReading) => Promise<void>;
 
 export class KafkaConsumerService {
+  private static instance: KafkaConsumerService;
   private kafka: Kafka;
   private consumer: Consumer;
   private config: KafkaConsumerConfig;
@@ -28,54 +21,35 @@ export class KafkaConsumerService {
   private connected: boolean = false;
   private messageHandler?: MessageHandler;
 
-  constructor(config: KafkaConsumerConfig) {
+  private constructor(config: KafkaConsumerConfig) {
     this.config = config;
     this.topic = config.topic;
 
     this.kafka = new Kafka({
-      clientId: config.clientId,
-      brokers: config.brokers,
-      retry: {
-        initialRetryTime: 300,
-        retries: 8,
-        multiplier: 2,
-        maxRetryTime: 30000,
-      },
+      clientId: config.clientId, brokers: config.brokers,
+      retry: { initialRetryTime: 300, retries: 8, multiplier: 2, maxRetryTime: 30000 },
       logLevel: this.getKafkaLogLevel(),
     });
 
     this.consumer = this.kafka.consumer({
-      groupId: config.groupId,
-      sessionTimeout: 30000,
-      heartbeatInterval: 3000,
-      retry: {
-        initialRetryTime: 300,
-        retries: 5,
-        multiplier: 2,
-        maxRetryTime: 30000,
-      },
+      groupId: config.groupId, sessionTimeout: 30000, heartbeatInterval: 3000,
+      retry: { initialRetryTime: 300, retries: 5, multiplier: 2, maxRetryTime: 30000 },
     });
-
     this.setupEventHandlers();
   }
 
-  /**
-   * Get Kafka log level from environment
-   */
+  static getInstance(config?: KafkaConsumerConfig): KafkaConsumerService {
+    if (!KafkaConsumerService.instance && config) KafkaConsumerService.instance = new KafkaConsumerService(config);
+    if (!KafkaConsumerService.instance) throw new Error('KafkaConsumerService must be initialized with config first');
+    return KafkaConsumerService.instance;
+  }
+
   private getKafkaLogLevel() {
     const logLevel = process.env.LOG_LEVEL?.toLowerCase() || 'info';
-    const levels: Record<string, number> = {
-      debug: 5,
-      info: 4,
-      warn: 2,
-      error: 1,
-    };
+    const levels: Record<string, number> = { debug: 5, info: 4, warn: 2, error: 1 };
     return levels[logLevel] || 4;
   }
 
-  /**
-   * Setup Kafka consumer event handlers
-   */
   private setupEventHandlers() {
     this.consumer.on('consumer.connect', () => {
       this.connected = true;
@@ -92,67 +66,34 @@ export class KafkaConsumerService {
       this.connected = false;
     });
 
-    this.consumer.on('consumer.group_join', (event) => {
-      logger.info(
-        {
-          groupId: event.payload.groupId,
-          memberId: event.payload.memberId,
-        },
-        'Joined consumer group'
-      );
-    });
+    this.consumer.on('consumer.group_join', (event) =>
+      logger.info({ groupId: event.payload.groupId, memberId: event.payload.memberId }, 'Joined consumer group'));
 
-    this.consumer.on('consumer.heartbeat', () => {
-      logger.debug('Consumer heartbeat sent');
-    });
+    this.consumer.on('consumer.heartbeat', () =>
+      logger.debug('Consumer heartbeat sent'));
   }
 
-  /**
-   * Connect to Kafka and subscribe to topic
-   */
-  async connect(): Promise<void> {
+  public async connect(): Promise<void> {
     try {
       await this.consumer.connect();
-      await this.consumer.subscribe({
-        topic: this.topic,
-        fromBeginning: false, // Start from latest offset
-      });
+      await this.consumer.subscribe({ topic: this.topic, fromBeginning: false });
 
-      logger.info(
-        {
-          topic: this.topic,
-          groupId: this.config.groupId,
-        },
-        'Kafka consumer subscribed'
-      );
+      logger.info({ topic: this.topic, groupId: this.config.groupId }, 'Kafka consumer subscribed');
     } catch (error) {
       logger.error({ error }, 'Failed to connect Kafka consumer');
       throw error;
     }
   }
 
-  /**
-   * Register message handler
-   */
-  onMessage(handler: MessageHandler) {
-    this.messageHandler = handler;
-  }
+  public onMessage(handler: MessageHandler) { this.messageHandler = handler; }
 
-  /**
-   * Start consuming messages
-   */
-  async startConsuming(): Promise<void> {
-    if (!this.messageHandler) {
-      throw new Error('Message handler not registered');
-    }
-
+  public async startConsuming(): Promise<void> {
     try {
+      if (!this.messageHandler) throw new Error('Message handler not registered');
+
       await this.consumer.run({
-        autoCommit: true,
-        autoCommitInterval: 5000,
-        eachMessage: async (payload: EachMessagePayload) => {
-          await this.handleMessage(payload);
-        },
+        autoCommit: true, autoCommitInterval: 5000,
+        eachMessage: async (payload: EachMessagePayload) => await this.handleMessage(payload)
       });
 
       logger.info('Started consuming messages');
@@ -162,84 +103,35 @@ export class KafkaConsumerService {
     }
   }
 
-  /**
-   * Handle individual message
-   */
   private async handleMessage(payload: EachMessagePayload): Promise<void> {
     const { topic, partition, message } = payload;
 
     try {
-      if (!message.value) {
-        logger.warn({ topic, partition, offset: message.offset }, 'Empty message value');
-        return;
-      }
+      if (!message.value) return void logger.warn({ topic, partition, offset: message.offset }, 'Empty message value');
+      const reading = JSON.parse(String(message.value)) as TelemetryReading;
 
-      // Deserialize message
-      const reading = JSON.parse(message.value.toString()) as TelemetryReading;
+      if (!reading.readingId || !reading.meterId || !reading.timestamp || !reading.powerKw)
+        return void logger.warn({ topic, partition, offset: message.offset, reading, }, 'Invalid reading structure');
 
-      // Validate basic structure
-      if (!reading.readingId || !reading.meterId || !reading.timestamp || !reading.powerKw) {
-        logger.warn(
-          {
-            topic,
-            partition,
-            offset: message.offset,
-            reading,
-          },
-          'Invalid reading structure'
-        );
-        return;
-      }
-
-      // Pass to handler
-      if (this.messageHandler) {
+      if (this.messageHandler)
         await this.messageHandler(reading);
-      }
 
-      logger.debug(
-        {
-          topic,
-          partition,
-          offset: message.offset,
-          meterId: reading.meterId,
-          timestamp: reading.timestamp,
-        },
-        'Message processed'
-      );
+      return void logger.debug({ topic, partition, offset: message.offset, meterId: reading.meterId, timestamp: reading.timestamp }, 'Message processed');
+
     } catch (error) {
-      logger.error(
-        {
-          error,
-          topic,
-          partition,
-          offset: message.offset,
-        },
-        'Error handling message'
-      );
-      // Don't throw - continue processing other messages
+      return void logger.error({ error, topic, partition, offset: message.offset, }, 'Error handling message');
     }
   }
 
-  /**
-   * Get consumer lag (approximate)
-   */
-  async getLag(): Promise<number> {
+  public async getLag(): Promise<number> {
     try {
       const admin = this.kafka.admin();
       await admin.connect();
 
-      // Get topic offsets (high watermarks)
       const topicOffsets = await admin.fetchTopicOffsets(this.topic);
-
-      // Get consumer offsets
-      const consumerOffsets = await admin.fetchOffsets({
-        groupId: this.config.groupId,
-        topics: [this.topic],
-      });
-
+      const consumerOffsets = await admin.fetchOffsets({ groupId: this.config.groupId, topics: [this.topic] });
       await admin.disconnect();
 
-      // Calculate total lag across all partitions
       let totalLag = 0;
       if (consumerOffsets.length > 0 && consumerOffsets[0].partitions) {
         for (const partition of consumerOffsets[0].partitions) {
@@ -258,31 +150,18 @@ export class KafkaConsumerService {
     }
   }
 
-  /**
-   * Get connection status
-   */
-  isConnected(): boolean {
-    return this.connected;
-  }
+  public isConnected(): boolean { return this.connected; }
 
-  /**
-   * Gracefully disconnect
-   */
-  async disconnect(): Promise<void> {
+  public async disconnect(): Promise<void> {
     try {
       if (this.connected) {
         await this.consumer.disconnect();
         logger.info('Disconnected from Kafka');
       }
-    } catch (error) {
-      logger.error({ error }, 'Error disconnecting from Kafka');
-    }
+    } catch (error) { logger.error({ error }, 'Error disconnecting from Kafka'); }
   }
 
-  /**
-   * Pause consumption (for backpressure handling)
-   */
-  async pause(): Promise<void> {
+  public async pause(): Promise<void> {
     try {
       this.consumer.pause([{ topic: this.topic }]);
       logger.info('Consumer paused');
@@ -291,10 +170,7 @@ export class KafkaConsumerService {
     }
   }
 
-  /**
-   * Resume consumption
-   */
-  async resume(): Promise<void> {
+  public async resume(): Promise<void> {
     try {
       this.consumer.resume([{ topic: this.topic }]);
       logger.info('Consumer resumed');

@@ -27,35 +27,30 @@ export interface Alert {
 }
 
 export class KafkaProducerService {
+  private static instance: KafkaProducerService;
   private kafka: Kafka;
   private producer: Producer;
   private connected: boolean = false;
 
-  constructor(config: KafkaProducerConfig) {
+  private constructor(config: KafkaProducerConfig) {
     this.kafka = new Kafka({
       clientId: config.clientId,
       brokers: config.brokers,
-      retry: {
-        initialRetryTime: 300,
-        retries: 8,
-        multiplier: 2,
-        maxRetryTime: 30000,
-      },
+      retry: { initialRetryTime: 300, retries: 8, multiplier: 2, maxRetryTime: 30000 },
       logLevel: this.getKafkaLogLevel(),
     });
-
     this.producer = this.kafka.producer({
       createPartitioner: Partitioners.DefaultPartitioner,
       allowAutoTopicCreation: true,
-      retry: {
-        initialRetryTime: 300,
-        retries: 5,
-        multiplier: 2,
-        maxRetryTime: 30000,
-      },
+      retry: { initialRetryTime: 300, retries: 5, multiplier: 2, maxRetryTime: 30000 },
     });
-
     this.setupEventHandlers();
+  }
+
+  static getInstance(config?: KafkaProducerConfig): KafkaProducerService {
+    if (!KafkaProducerService.instance && config) KafkaProducerService.instance = new KafkaProducerService(config);
+    if (!KafkaProducerService.instance) throw new Error('KafkaProducerService must be initialized with config first');
+    return KafkaProducerService.instance;
   }
 
   /**

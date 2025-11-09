@@ -11,18 +11,11 @@ CREATE TABLE IF NOT EXISTS aggregates_1m (
     PRIMARY KEY (meter_id, window_start)
 );
 
--- Convert to TimescaleDB hypertable
 SELECT create_hypertable('aggregates_1m', 'window_start', if_not_exists => TRUE);
 
--- Create index for efficient region queries
-CREATE INDEX IF NOT EXISTS idx_aggregates_1m_region_time 
-    ON aggregates_1m (region, window_start DESC);
+CREATE INDEX IF NOT EXISTS idx_aggregates_1m_region_time ON aggregates_1m (region, window_start DESC);
+CREATE INDEX IF NOT EXISTS idx_aggregates_1m_meter_time ON aggregates_1m (meter_id, window_start DESC);
 
--- Create index for meter queries
-CREATE INDEX IF NOT EXISTS idx_aggregates_1m_meter_time 
-    ON aggregates_1m (meter_id, window_start DESC);
-
--- Create aggregates_15m table (15-minute window aggregates)
 CREATE TABLE IF NOT EXISTS aggregates_15m (
     meter_id TEXT NOT NULL,
     region TEXT NOT NULL,
@@ -35,19 +28,12 @@ CREATE TABLE IF NOT EXISTS aggregates_15m (
     PRIMARY KEY (meter_id, window_start)
 );
 
--- Convert to TimescaleDB hypertable
 SELECT create_hypertable('aggregates_15m', 'window_start', if_not_exists => TRUE);
 
--- Create index for efficient region queries
-CREATE INDEX IF NOT EXISTS idx_aggregates_15m_region_time 
-    ON aggregates_15m (region, window_start DESC);
+CREATE INDEX IF NOT EXISTS idx_aggregates_15m_region_time ON aggregates_15m (region, window_start DESC);
+CREATE INDEX IF NOT EXISTS idx_aggregates_15m_meter_time ON aggregates_15m (meter_id, window_start DESC);
 
--- Create index for meter queries
-CREATE INDEX IF NOT EXISTS idx_aggregates_15m_meter_time 
-    ON aggregates_15m (meter_id, window_start DESC);
-
--- Create continuous aggregate for region-level summaries (optional optimization)
-CREATE MATERIALIZED VIEW IF NOT EXISTS aggregates_1m_by_region
+CREATE MATERIALIZED VIEW IF NOT EXISTS aggregates_1m_by_region 
 WITH (timescaledb.continuous) AS
 SELECT 
     region,
@@ -60,14 +46,11 @@ FROM aggregates_1m
 GROUP BY region, bucket
 WITH NO DATA;
 
--- Add refresh policy for continuous aggregate
 SELECT add_continuous_aggregate_policy('aggregates_1m_by_region',
     start_offset => INTERVAL '1 hour',
     end_offset => INTERVAL '1 minute',
     schedule_interval => INTERVAL '1 minute',
     if_not_exists => TRUE);
 
--- Create retention policies (optional - keep data for 90 days)
--- Uncomment if you want automatic data cleanup
--- SELECT add_retention_policy('aggregates_1m', INTERVAL '90 days', if_not_exists => TRUE);
--- SELECT add_retention_policy('aggregates_15m', INTERVAL '180 days', if_not_exists => TRUE);
+SELECT add_retention_policy('aggregates_1m', INTERVAL '90 days', if_not_exists => TRUE);
+SELECT add_retention_policy('aggregates_15m', INTERVAL '180 days', if_not_exists => TRUE);

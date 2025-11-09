@@ -27,13 +27,18 @@ interface AggregateWindow {
  * Maintains in-memory windows and computes statistics
  */
 export class AggregatorService {
-  // Map: windowBucket -> meterId -> aggregates
+  private static instance: AggregatorService;
   private windows1m: Map<string, Map<string, AggregateWindow>> = new Map();
   private windows15m: Map<string, Map<string, AggregateWindow>> = new Map();
-
-  // Track oldest bucket for cleanup
   private oldestBucket1m: string | null = null;
   private oldestBucket15m: string | null = null;
+
+  private constructor() { }
+
+  static getInstance(): AggregatorService {
+    if (!AggregatorService.instance) AggregatorService.instance = new AggregatorService();
+    return AggregatorService.instance;
+  }
 
   /**
    * Process a single telemetry reading
