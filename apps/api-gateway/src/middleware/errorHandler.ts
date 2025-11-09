@@ -1,80 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger.js';
-import { sendError, sendInternalError } from '../utils/response.js';
+import { ApiResponse } from '../types/index.js';
 
-/**
- * Custom error class for API errors
- */
-export class ApiError extends Error {
-  statusCode: number;
-  isOperational: boolean;
+export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction): void {
+  logger.error('Error:', err);
 
-  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = isOperational;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
-/**
- * Global error handler middleware
- * Catches all errors and returns consistent error responses
- */
-export function errorHandler(
-  error: Error | ApiError,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
-  // Log the error
-  const errorLog = {
-    message: error.message,
-    stack: error.stack,
-    path: req.path,
-    method: req.method,
-    query: req.query,
-    body: req.body,
-    userId: (req as any).user?.userId,
+  const statusCode = err.statusCode || 500;
+  const response: ApiResponse = {
+    success: false,
+    error: {
+      code: err.code || 'INTERNAL_SERVER_ERROR',
+      message: err.message || 'Internal server error',
+      details: err.details,
+    },
   };
 
-  if (error instanceof ApiError && error.isOperational) {
-    logger.warn('Operational error occurred', errorLog);
-  } else {
-    logger.error('Unexpected error occurred', errorLog);
-  }
-
-  // Send error response
-  if (error instanceof ApiError) {
-    sendError(res, error.message, error.statusCode);
-  } else {
-    // Unexpected errors
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const message = isDevelopment ? error.message : 'Internal server error';
-    sendInternalError(res, message);
-  }
+  res.status(statusCode).json(response);
 }
 
-/**
- * 404 Not Found handler
- */
-export function notFoundHandler(req: Request, res: Response): void {
-  logger.warn('Route not found', {
-    path: req.path,
-    method: req.method,
-    query: req.query,
-  });
-
-  sendError(res, `Cannot ${req.method} ${req.path}`, 404);
-}
-
-/**
- * Async handler wrapper to catch errors in async route handlers
- */
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+export function notFoundHandler(_req: Request, res: Response): void {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: 'Route not found',
+    },
+  } as ApiResponse);
 }

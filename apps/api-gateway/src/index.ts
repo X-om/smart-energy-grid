@@ -1,106 +1,55 @@
 import 'dotenv/config';
-import app from './app.js';
-import { postgresClient } from './db/postgres.js';
-import { timescaleClient } from './db/timescale.js';
-import { redisClient } from './db/redis.js';
+import express from 'express';
+import cors from 'cors';
+import userRouter from './routes/userRouter.js';
+import adminRouter from './routes/adminRouter.js';
+import operatorRouter from './routes/operatorRouter.js';
+
 import { logger } from './utils/logger.js';
+import { connectDatabases, disconnectDatabases } from './utils/db.js';
+import { env } from './config/env.js';
+import { healthController } from './helpers/healthController.js';
+import { metricsController } from './helpers/metricsController.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
-const PORT = process.env.PORT || 3000;
+const app = express();
 
-/**
- * Initialize database connections
- */
-async function initializeDatabases(): Promise<void> {
-  try {
-    logger.info('Initializing database connections...');
+app.use(express.json());
+app.use(cors({ origin: env.CORS_ORIGIN }));
 
-    // Connect to PostgreSQL
-    await postgresClient.connect();
-    logger.info('✓ PostgreSQL connected');
+app.get('/health', healthController);
+app.get('/metrics', metricsController);
 
-    // Connect to TimescaleDB
-    await timescaleClient.connect();
-    logger.info('✓ TimescaleDB connected');
+app.use('/api/v1/user', userRouter);
+app.use('/api/v1/operator', operatorRouter);
+app.use('/api/v1/admin', adminRouter);
 
-    // Connect to Redis
-    await redisClient.connect();
-    logger.info('✓ Redis connected');
+app.use(notFoundHandler);
+app.use(errorHandler);
 
-    logger.info('All database connections established');
-  } catch (error) {
-    logger.error('Failed to initialize databases', error);
-    throw error;
-  }
-}
-
-/**
- * Graceful shutdown handler
- */
-async function gracefulShutdown(signal: string): Promise<void> {
-  logger.info(`Received ${signal}, shutting down gracefully...`);
-
-  try {
-    // Close database connections
-    await Promise.all([
-      postgresClient.disconnect(),
-      timescaleClient.disconnect(),
-      redisClient.disconnect(),
-    ]);
-
-    logger.info('All connections closed');
-    process.exit(0);
-  } catch (error) {
-    logger.error('Error during graceful shutdown', error);
-    process.exit(1);
-  }
-}
-
-/**
- * Start the server
- */
-async function startServer(): Promise<void> {
+const startServer = async (): Promise<void> => {
   try {
     logger.info('Starting API Gateway...');
 
-    // Initialize databases
-    await initializeDatabases();
-
-    // Start HTTP server
-    const server = app.listen(PORT, () => {
-      logger.info(`🚀 API Gateway started successfully on port ${PORT}`);
-      logger.info(`📚 API Documentation: http://localhost:${PORT}/docs`);
-      logger.info(`💚 Health Check: http://localhost:${PORT}/health`);
-      logger.info(`📊 Metrics: http://localhost:${PORT}/metrics`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    await connectDatabases();
+    const server = app.listen(env.PORT, () => {
+      logger.info(`🚀 API Gateway started on port ${env.PORT}`);
+      logger.info(`📚 Health: http://localhost:${env.PORT}/health`);
+      logger.info(`📊 Metrics: http://localhost:${env.PORT}/metrics`);
+      logger.info(`Environment: ${env.NODE_ENV}`);
     });
 
-    // Register shutdown handlers
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, shutting down...`);
+      server.close(async () => { await disconnectDatabases(); process.exit(0); });
+    };
 
-    // Handle uncaught errors
-    process.on('unhandledRejection', (reason, promise) => {
-      logger.error('Unhandled Promise Rejection', { reason, promise });
-    });
-
-    process.on('uncaughtException', (error) => {
-      logger.error('Uncaught Exception', error);
-      gracefulShutdown('uncaughtException');
-    });
-
-    return new Promise((resolve) => {
-      server.on('listening', () => resolve());
-    });
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
-    logger.error('Failed to start API Gateway', error);
+    logger.error('Failed to start server', error);
     process.exit(1);
   }
 }
 
-// Start the server
-startServer().catch((error) => {
-  logger.error('Startup failed', error);
-  process.exit(1);
-});
-
-console.log('🌐 [API-GATEWAY] API Gateway Service initialized');
+startServer();
