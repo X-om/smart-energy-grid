@@ -8,21 +8,18 @@ import { config } from '../config/env.js';
 const logger = createLogger('flush-controller');
 
 export const flush1mAggregates = async (): Promise<void> => {
-  const startTime = Date.now();
-
   try {
+    const startTime = Date.now();
     const aggregator = AggregatorService.getInstance();
     const aggregates = aggregator.getReadyAggregates1m();
 
-    if (aggregates.length === 0) {
-      logger.debug('No 1m aggregates ready to flush');
-      return;
-    }
+    if (aggregates.length === 0) return logger.debug('No 1m aggregates ready to flush');
 
     logger.info({ count: aggregates.length }, 'Flushing 1m aggregates');
 
     const db = TimescaleDBService.getInstance();
     const dbStart = Date.now();
+
     await db.upsertAggregates1m(aggregates);
     const dbDuration = Date.now() - dbStart;
 
@@ -31,8 +28,8 @@ export const flush1mAggregates = async (): Promise<void> => {
 
     const kafkaProducer = KafkaProducerService.getInstance();
     const published = await kafkaProducer.publishAggregates1m(aggregates, config.kafka.topicAgg1m);
-    streamAggregatesPublishedTotal.inc({ window_type: '1m' }, published);
 
+    streamAggregatesPublishedTotal.inc({ window_type: '1m' }, published);
     aggregator.clearFlushedWindows1m();
 
     const duration = Date.now() - startTime;
@@ -45,17 +42,12 @@ export const flush1mAggregates = async (): Promise<void> => {
 };
 
 export const flush15mAggregates = async (): Promise<void> => {
-  const startTime = Date.now();
-
   try {
+    const startTime = Date.now();
     const aggregator = AggregatorService.getInstance();
     const aggregates = aggregator.getReadyAggregates15m();
 
-    if (aggregates.length === 0) {
-      logger.debug('No 15m aggregates ready to flush');
-      return;
-    }
-
+    if (aggregates.length === 0) return logger.debug('No 15m aggregates ready to flush');
     logger.info({ count: aggregates.length }, 'Flushing 15m aggregates');
 
     const db = TimescaleDBService.getInstance();
@@ -68,8 +60,8 @@ export const flush15mAggregates = async (): Promise<void> => {
 
     const kafkaProducer = KafkaProducerService.getInstance();
     const published = await kafkaProducer.publishAggregates15m(aggregates, config.kafka.topicAgg15m);
-    streamAggregatesPublishedTotal.inc({ window_type: '15m' }, published);
 
+    streamAggregatesPublishedTotal.inc({ window_type: '15m' }, published);
     aggregator.clearFlushedWindows15m();
 
     const duration = Date.now() - startTime;

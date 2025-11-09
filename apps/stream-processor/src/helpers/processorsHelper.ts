@@ -21,6 +21,7 @@ export const handleReading = async (reading: TelemetryReading): Promise<void> =>
     aggregator.processReading(reading);
 
     const anomalyDetector = AnomalyDetectorService.getInstance();
+    // ! CRITICAL : every alert type is ANOMALY for now
     const alert = await anomalyDetector.checkReading(reading);
 
     if (alert) {
@@ -32,7 +33,6 @@ export const handleReading = async (reading: TelemetryReading): Promise<void> =>
         streamAlertsPublishedTotal.inc();
       }
     }
-
     const duration = Date.now() - startTime;
     logger.debug({ meterId: reading.meterId, powerKw: reading.powerKw, duration }, 'Reading processed');
   } catch (error) {

@@ -1,10 +1,3 @@
-/**
- * TimescaleDB Connection and Query Service
- * 
- * Manages PostgreSQL/TimescaleDB connection pool and provides
- * methods for storing aggregated data.
- */
-
 import { Pool } from 'pg';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -25,7 +18,6 @@ export interface Aggregate1m {
   energyKwhSum: number;
   count: number;
 }
-
 export interface Aggregate15m extends Aggregate1m { }
 
 export class TimescaleDBService {
@@ -34,52 +26,32 @@ export class TimescaleDBService {
   private connected: boolean = false;
 
   private constructor(connectionString: string) {
-    this.pool = new Pool({
-      connectionString,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
+    this.pool = new Pool({ connectionString, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
     this.setupEventHandlers();
   }
 
-  static getInstance(connectionString?: string): TimescaleDBService {
+  public static getInstance(connectionString?: string): TimescaleDBService {
     if (!TimescaleDBService.instance && connectionString) TimescaleDBService.instance = new TimescaleDBService(connectionString);
     if (!TimescaleDBService.instance) throw new Error('TimescaleDBService must be initialized with connectionString first');
     return TimescaleDBService.instance;
   }
 
-  /**
-   * Setup pool event handlers
-   */
+  // * Setup pool event handlers
   private setupEventHandlers() {
-    this.pool.on('error', (err) => {
-      logger.error({ err }, 'Unexpected database pool error');
-    });
-
-    this.pool.on('connect', () => {
-      logger.debug('New database client connected');
-    });
-
-    this.pool.on('remove', () => {
-      logger.debug('Database client removed from pool');
-    });
+    this.pool.on('error', (err) => logger.error({ err }, 'Unexpected database pool error'));
+    this.pool.on('connect', () => logger.debug('New database client connected'));
+    this.pool.on('remove', () => logger.debug('Database client removed from pool'));
   }
 
-  /**
-   * Connect and run migrations
-   */
-  async connect(): Promise<void> {
+  // * Connect and run migrations
+  public async connect(): Promise<void> {
     try {
-      // Test connection
       const client = await this.pool.connect();
       await client.query('SELECT NOW()');
       client.release();
 
       this.connected = true;
       logger.info('Connected to TimescaleDB');
-
-      // Run migrations
       await this.runMigrations();
     } catch (error) {
       logger.error({ error }, 'Failed to connect to TimescaleDB');
@@ -87,9 +59,7 @@ export class TimescaleDBService {
     }
   }
 
-  /**
-   * Run database migrations
-   */
+  // * Run database migrations
   private async runMigrations(): Promise<void> {
     try {
       const migrationPath = join(__dirname, 'migrations', '001_create_aggregates.sql');
@@ -103,36 +73,18 @@ export class TimescaleDBService {
     }
   }
 
-  /**
-   * Upsert 1-minute aggregates into TimescaleDB
-   */
-  async upsertAggregates1m(aggregates: Aggregate1m[]): Promise<number> {
+  // * Upsert 1-minute aggregates into TimescaleDB
+  public async upsertAggregates1m(aggregates: Aggregate1m[]): Promise<number> {
     if (aggregates.length === 0) return 0;
-
-    const startTime = Date.now();
-
     try {
-      const values = aggregates
-        .map(
-          (_agg, idx) =>
-            `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`
-        )
-        .join(', ');
+      const startTime = Date.now();
+      const values = aggregates.map((_agg, idx) => `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`).join(', ');
 
       const params = aggregates.flatMap((agg) => [
-        agg.meterId,
-        agg.region,
-        agg.windowStart,
-        agg.avgPowerKw,
-        agg.maxPowerKw,
-        agg.energyKwhSum,
-        agg.count,
+        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw, agg.energyKwhSum, agg.count
       ]);
-
       const query = `
-        INSERT INTO aggregates_1m (
-          meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count
-        )
+        INSERT INTO aggregates_1m (meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
@@ -142,14 +94,9 @@ export class TimescaleDBService {
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
           count = EXCLUDED.count
       `;
-
       await this.pool.query(query, params);
-
       const duration = Date.now() - startTime;
-      logger.debug(
-        { count: aggregates.length, duration },
-        'Upserted 1-minute aggregates'
-      );
+      logger.debug({ count: aggregates.length, duration }, 'Upserted 1-minute aggregates');
 
       return aggregates.length;
     } catch (error) {
@@ -158,36 +105,18 @@ export class TimescaleDBService {
     }
   }
 
-  /**
-   * Insert or update 15-minute aggregates (batch upsert)
-   */
+  //  * Insert or update 15-minute aggregates (batch upsert)
   async upsertAggregates15m(aggregates: Aggregate15m[]): Promise<number> {
     if (aggregates.length === 0) return 0;
-
-    const startTime = Date.now();
-
     try {
-      const values = aggregates
-        .map(
-          (_agg, idx) =>
-            `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`
-        )
-        .join(', ');
+      const startTime = Date.now();
+      const values = aggregates.map((_agg, idx) => `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`).join(', ');
 
       const params = aggregates.flatMap((agg) => [
-        agg.meterId,
-        agg.region,
-        agg.windowStart,
-        agg.avgPowerKw,
-        agg.maxPowerKw,
-        agg.energyKwhSum,
-        agg.count,
+        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw, agg.energyKwhSum, agg.count
       ]);
-
       const query = `
-        INSERT INTO aggregates_15m (
-          meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count
-        )
+        INSERT INTO aggregates_15m (meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
@@ -197,14 +126,9 @@ export class TimescaleDBService {
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
           count = EXCLUDED.count
       `;
-
       await this.pool.query(query, params);
-
       const duration = Date.now() - startTime;
-      logger.debug(
-        { count: aggregates.length, duration },
-        'Upserted 15-minute aggregates'
-      );
+      logger.debug({ count: aggregates.length, duration }, 'Upserted 15-minute aggregates');
 
       return aggregates.length;
     } catch (error) {
@@ -213,19 +137,14 @@ export class TimescaleDBService {
     }
   }
 
-  /**
-   * Get the last known average power for a meter (for anomaly detection)
-   */
+  // * Get the last known average power for a meter (for anomaly detection)
   async getLastAvgPowerForMeter(meterId: string): Promise<number | null> {
     try {
       const result = await this.pool.query(
         `SELECT avg_power_kw 
-         FROM aggregates_1m 
-         WHERE meter_id = $1 
-         ORDER BY window_start DESC 
-         LIMIT 1`,
-        [meterId]
-      );
+        FROM aggregates_1m 
+        WHERE meter_id = $1 
+        ORDER BY window_start DESC LIMIT 1`, [meterId]);
 
       return result.rows.length > 0 ? result.rows[0].avg_power_kw : null;
     } catch (error) {
@@ -234,22 +153,14 @@ export class TimescaleDBService {
     }
   }
 
-  /**
-   * Query aggregates for a time range (for testing/verification)
-   */
-  async queryAggregates1m(
-    startTime: Date,
-    endTime: Date,
-    meterId?: string
-  ): Promise<Aggregate1m[]> {
+  // * Query aggregates for a time range (for testing/verification)
+  async queryAggregates1m(startTime: Date, endTime: Date, meterId?: string): Promise<Array<Aggregate1m>> {
     try {
-      const params: any[] = [startTime, endTime];
+      const params: Array<unknown> = [startTime, endTime];
       let whereClause = 'WHERE window_start >= $1 AND window_start < $2';
 
-      if (meterId) {
-        params.push(meterId);
-        whereClause += ' AND meter_id = $3';
-      }
+      meterId ? params.push(meterId) : null;
+      meterId ? whereClause += ' AND meter_id = $3' : null;
 
       const result = await this.pool.query(
         `SELECT 
@@ -260,40 +171,23 @@ export class TimescaleDBService {
           max_power_kw as "maxPowerKw",
           energy_kwh_sum as "energyKwhSum",
           count
-         FROM aggregates_1m
-         ${whereClause}
-         ORDER BY window_start DESC`,
-        params
-      );
+         FROM aggregates_1m ${whereClause}
+         ORDER BY window_start DESC`, params);
 
       return result.rows;
     } catch (error) {
       logger.error({ error }, 'Failed to query 1m aggregates');
-      return [];
+      return Array<Aggregate1m>();
     }
   }
 
-  /**
-   * Get connection status
-   */
-  isConnected(): boolean {
-    return this.connected;
+  isConnected(): boolean { return this.connected; }
+
+  public getStats() {
+    return { total: this.pool.totalCount, idle: this.pool.idleCount, waiting: this.pool.waitingCount };
   }
 
-  /**
-   * Get pool stats
-   */
-  getStats() {
-    return {
-      total: this.pool.totalCount,
-      idle: this.pool.idleCount,
-      waiting: this.pool.waitingCount,
-    };
-  }
-
-  /**
-   * Gracefully disconnect
-   */
+  // * Gracefully disconnect
   async disconnect(): Promise<void> {
     try {
       await this.pool.end();

@@ -1,22 +1,9 @@
-/**
- * Prometheus Metrics for Stream Processor
- * 
- * Tracks processing performance and system health
- */
-
 import { Registry, Counter, Histogram, Gauge } from 'prom-client';
 
-// Create a custom registry
 export const register = new Registry();
+register.setDefaultLabels({ service: 'stream-processor' });
 
-// Default labels
-register.setDefaultLabels({
-  service: 'stream-processor',
-});
-
-/**
- * Message Processing Metrics
- */
+// * Message Processing Metrics
 export const streamMessagesTotal = new Counter({
   name: 'stream_messages_total',
   help: 'Total number of messages consumed from Kafka',
@@ -31,9 +18,7 @@ export const streamMessageProcessingDuration = new Histogram({
   registers: [register],
 });
 
-/**
- * Aggregation Metrics
- */
+// * Aggregation Metrics
 export const streamAggregatesWrittenTotal = new Counter({
   name: 'stream_aggregates_written_total',
   help: 'Total number of aggregates written to TimescaleDB',
@@ -56,9 +41,7 @@ export const streamAggregationFlushDuration = new Histogram({
   registers: [register],
 });
 
-/**
- * Anomaly Detection Metrics
- */
+// * Anomaly Detection Metrics
 export const streamAnomaliesDetectedTotal = new Counter({
   name: 'stream_anomalies_detected_total',
   help: 'Total number of anomalies detected',
@@ -72,9 +55,7 @@ export const streamAlertsPublishedTotal = new Counter({
   registers: [register],
 });
 
-/**
- * Database Metrics
- */
+// * Database Metrics
 export const dbWriteLatency = new Histogram({
   name: 'db_write_latency_ms',
   help: 'Database write latency in milliseconds',
@@ -97,9 +78,7 @@ export const dbConnectionPoolSize = new Gauge({
   registers: [register],
 });
 
-/**
- * Kafka Metrics
- */
+// * Kafka Metrics
 export const streamLagSeconds = new Gauge({
   name: 'stream_lag_seconds',
   help: 'Consumer lag in seconds (time behind latest message)',
@@ -113,9 +92,7 @@ export const kafkaPublishErrorsTotal = new Counter({
   registers: [register],
 });
 
-/**
- * Windowing Metrics
- */
+// * Windowing Metrics
 export const streamWindowedReadingsGauge = new Gauge({
   name: 'stream_windowed_readings',
   help: 'Current number of readings in windows',
@@ -130,9 +107,7 @@ export const streamWindowBucketsGauge = new Gauge({
   registers: [register],
 });
 
-/**
- * Service Health Metrics
- */
+// * Service Health Metrics
 export const kafkaConsumerConnected = new Gauge({
   name: 'kafka_consumer_connected',
   help: 'Kafka consumer connection status (1 = connected, 0 = disconnected)',
@@ -157,21 +132,17 @@ export const serviceUptime = new Gauge({
   registers: [register],
 });
 
-/**
- * Update service uptime metric
- */
+// * Update service uptime metric
 const startTime = Date.now();
 export function updateUptime() {
   const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
   serviceUptime.set(uptimeSeconds);
 }
 
-// Update uptime every 10 seconds
+// * Update uptime every 10 seconds
 setInterval(updateUptime, 10000);
 
-/**
- * Initialize metrics with default values
- */
+// * Initialize metrics with default values
 export function initializeMetrics() {
   kafkaConsumerConnected.set(0);
   kafkaProducerConnected.set(0);
@@ -180,5 +151,5 @@ export function initializeMetrics() {
   streamLagSeconds.set(0);
 }
 
-// Initialize on module load
+// * Initialize on module load
 initializeMetrics();
