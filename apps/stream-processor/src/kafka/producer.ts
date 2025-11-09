@@ -10,10 +10,10 @@ export interface KafkaProducerConfig {
 }
 
 export interface Alert {
-  alertId: string;
+  id: string;
   type: 'ANOMALY' | 'OVERLOAD' | 'OUTAGE';
-  severity: 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
-  meterId: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  meter_id: string;
   region: string;
   message: string;
   timestamp: string;
@@ -155,12 +155,12 @@ export class KafkaProducerService {
       if (!this.connected) return false;
       await this.producer.send({
         topic, messages: [{
-          key: alert.meterId, value: JSON.stringify(alert),
+          key: alert.meter_id, value: JSON.stringify(alert),
           headers: { type: alert.type, severity: alert.severity, region: alert.region }
         }]
       });
 
-      logger.info({ alertId: alert.alertId, type: alert.type, severity: alert.severity, meterId: alert.meterId, }, 'Published alert');
+      logger.info({ alertId: alert.id, type: alert.type, severity: alert.severity, meterId: alert.meter_id, }, 'Published alert');
       return true;
     } catch (error) {
       logger.error({ error, alert }, 'Failed to publish alert');
@@ -173,7 +173,7 @@ export class KafkaProducerService {
     try {
       if (!this.connected || alerts.length === 0) return 0;
       const messages = alerts.map((alert) => ({
-        key: alert.meterId, value: JSON.stringify(alert),
+        key: alert.meter_id, value: JSON.stringify(alert),
         headers: { type: alert.type, severity: alert.severity, region: alert.region }
       }));
 

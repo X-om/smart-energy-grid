@@ -12,11 +12,14 @@ export interface KafkaConsumerConfig {
 
 export interface RegionalAggregate {
   region: string;
-  windowStart: string;
-  avgPowerKw: number;
-  energyKwhSum: number;
-  maxPowerKw?: number;
-  count?: number;
+  timestamp: string;
+  meter_count: number;
+  total_consumption: number;
+  avg_consumption: number;
+  max_consumption: number;
+  min_consumption: number;
+  load_percentage: number;
+  active_meters: string[];
 }
 
 export type AggregateHandler = (aggregate: RegionalAggregate) => Promise<void>;
@@ -115,7 +118,7 @@ export class KafkaConsumerService {
       const messageStr = message.value.toString();
       const aggregate = JSON.parse(messageStr) as RegionalAggregate;
 
-      if (!aggregate.region || !aggregate.avgPowerKw)
+      if (!aggregate.region || !aggregate.total_consumption)
         return logger.warn({ aggregate, offset: message.offset }, 'Invalid aggregate message - missing required fields');
 
       if (this.aggregateHandler) await this.aggregateHandler(aggregate);

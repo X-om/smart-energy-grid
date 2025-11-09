@@ -31,7 +31,7 @@ export interface ExtendedWebSocket extends WebSocket {
 
 export interface WebSocketMessage {
   type: string;
-  payload: any;
+  payload: unknown;
 }
 
 export class WebSocketService {
@@ -47,61 +47,41 @@ export class WebSocketService {
   }
 
   static getInstance(): WebSocketService {
-    if (!WebSocketService.instance) {
+    if (!WebSocketService.instance)
       WebSocketService.instance = new WebSocketService();
-    }
     return WebSocketService.instance;
   }
 
   initialize(server: Server): void {
-    this.wss = new WebSocketServer({
-      server,
-      path: Config.websocket.path
-    });
+    this.wss = new WebSocketServer({ server, path: Config.websocket.path });
 
-    this.wss.on('connection', (ws: WebSocket, request: IncomingMessage) => {
-      this.handleConnection(ws as ExtendedWebSocket, request);
-    });
-
-    this.wss.on('error', (error: Error) => {
-      logger.error({ error }, 'WebSocket server error');
-    });
+    this.wss.on('connection', (ws: WebSocket, request: IncomingMessage) => this.handleConnection(ws as ExtendedWebSocket, request));
+    this.wss.on('error', (error: Error) => logger.error({ error }, 'WebSocket server error'));
 
     this.startHeartbeat();
-
     logger.info({
-      path: Config.websocket.path,
-      heartbeatInterval: Config.websocket.heartbeatInterval,
-      maxConnections: Config.websocket.maxConnections
+      path: Config.websocket.path, heartbeatInterval: Config.websocket.heartbeatInterval, maxConnections: Config.websocket.maxConnections
     }, 'WebSocket server initialized');
   }
 
   private handleConnection(ws: ExtendedWebSocket, request: IncomingMessage): void {
-    if (this.clients.size >= Config.websocket.maxConnections) {
-      logger.warn({ currentConnections: this.clients.size }, 'Connection rejected: max connections reached');
-      ws.close(1008, 'Server at capacity');
-      return;
-    }
-
-    const url = `ws://${request.headers.host}${request.url}`;
-    const authHeader = request.headers.authorization;
-    const token = this.extractToken(url, authHeader);
-
-    if (!token) {
-      logger.warn('Connection rejected: no token provided');
-      ws.close(4001, 'Authentication required');
-      return;
-    }
-
     try {
+      if (this.clients.size >= Config.websocket.maxConnections) {
+        logger.warn({ currentConnections: this.clients.size }, 'Connection rejected: max connections reached');
+        return ws.close(1008, 'Server at capacity');
+      }
+
+      const url = `ws://${request.headers.host}${request.url}`;
+      const authHeader = request.headers.authorization;
+      const token = this.extractToken(url, authHeader);
+
+      if (!token) {
+        logger.warn('Connection rejected: no token provided');
+        return ws.close(4001, 'Authentication required');
+      }
       const tokenPayload = this.verifyToken(token);
       const clientId = uuidv4();
-
-      const auth: AuthenticatedClient = {
-        ...tokenPayload,
-        clientId,
-        connectedAt: new Date()
-      };
+      const auth: AuthenticatedClient = { ...tokenPayload, clientId, connectedAt: new Date() };
 
       ws.clientId = clientId;
       ws.auth = auth;
@@ -109,21 +89,15 @@ export class WebSocketService {
       ws.channels = new Set();
 
       this.clients.set(clientId, ws);
-
       logger.info({
-        clientId,
-        userId: auth.userId,
-        role: auth.role,
-        region: auth.region,
-        totalConnections: this.clients.size
+        clientId, userId: auth.userId, role: auth.role, region: auth.region, totalConnections: this.clients.size
       }, 'Client connected');
 
       const defaultChannels = this.getDefaultChannels(auth);
-      this.subscribeToChannels(ws, defaultChannels);
 
+      this.subscribeToChannels(ws, defaultChannels);
       this.sendWelcome(ws, Array.from(ws.channels));
       this.setupClientHandlers(ws);
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.warn({ error: errorMessage }, 'Connection rejected: authentication failed');
@@ -140,7 +114,8 @@ export class WebSocketService {
         if (parsed.action === 'subscribe' && parsed.channels) {
           this.subscribeToChannels(ws, parsed.channels);
           this.sendMessage(ws, { type: 'SUBSCRIBED', payload: { channels: parsed.channels } });
-        } else if (parsed.action === 'unsubscribe' && parsed.channels) {
+        }
+        else if (parsed.action === 'unsubscribe' && parsed.channels) {
           this.unsubscribeFromChannels(ws, parsed.channels);
           this.sendMessage(ws, { type: 'UNSUBSCRIBED', payload: { channels: parsed.channels } });
         }
@@ -149,64 +124,38 @@ export class WebSocketService {
       }
     });
 
-    ws.on('pong', () => {
-      ws.isAlive = true;
-    });
-
-    ws.on('close', (code: number, reason: Buffer) => {
-      this.handleDisconnection(ws, code, reason.toString());
-    });
-
-    ws.on('error', (error: Error) => {
-      logger.error({ clientId: ws.clientId, error: error.message }, 'WebSocket error');
-    });
+    ws.on('pong', () => ws.isAlive = true);
+    ws.on('close', (code: number, reason: Buffer) => this.handleDisconnection(ws, code, reason.toString()));
+    ws.on('error', (error: Error) => logger.error({ clientId: ws.clientId, error: error.message }, 'WebSocket error'));
   }
 
   private handleDisconnection(ws: ExtendedWebSocket, code: number, reason: string): void {
-    logger.info({
-      clientId: ws.clientId,
-      userId: ws.auth?.userId,
-      code,
-      reason,
-      duration: Date.now() - ws.auth?.connectedAt.getTime()
-    }, 'Client disconnected');
+    logger.info({ clientId: ws.clientId, userId: ws.auth?.userId, code, reason, duration: Date.now() - ws.auth?.connectedAt.getTime() }, 'Client disconnected');
 
     for (const channel of ws.channels) {
       const subscribers = this.subscriptions.get(channel);
       if (subscribers) {
         subscribers.delete(ws);
-        if (subscribers.size === 0) {
-          this.subscriptions.delete(channel);
-        }
+        if (subscribers.size === 0) this.subscriptions.delete(channel);
       }
     }
-
     this.clients.delete(ws.clientId);
   }
 
   private subscribeToChannels(ws: ExtendedWebSocket, channels: string[]): void {
     for (const channel of channels) {
       if (!this.canAccessChannel(ws.auth, channel)) {
-        logger.warn({
-          clientId: ws.clientId,
-          userId: ws.auth.userId,
-          role: ws.auth.role,
-          channel
-        }, 'Channel access denied');
+        logger.warn({ clientId: ws.clientId, userId: ws.auth.userId, role: ws.auth.role, channel }, 'Channel access denied');
         continue;
       }
 
-      if (!this.subscriptions.has(channel)) {
+      if (!this.subscriptions.has(channel))
         this.subscriptions.set(channel, new Set());
-      }
+
       this.subscriptions.get(channel)!.add(ws);
       ws.channels.add(channel);
 
-      logger.debug({
-        clientId: ws.clientId,
-        channel,
-        subscriberCount: this.subscriptions.get(channel)!.size
-      }, 'Client subscribed to channel');
+      logger.debug({ clientId: ws.clientId, channel, subscriberCount: this.subscriptions.get(channel)!.size }, 'Client subscribed to channel');
     }
   }
 
@@ -217,15 +166,10 @@ export class WebSocketService {
         subscribers.delete(ws);
         ws.channels.delete(channel);
 
-        if (subscribers.size === 0) {
+        if (subscribers.size === 0)
           this.subscriptions.delete(channel);
-        }
 
-        logger.debug({
-          clientId: ws.clientId,
-          channel,
-          remainingSubscribers: subscribers.size
-        }, 'Client unsubscribed from channel');
+        logger.debug({ clientId: ws.clientId, channel, remainingSubscribers: subscribers.size }, 'Client unsubscribed from channel');
       }
     }
   }
@@ -259,13 +203,9 @@ export class WebSocketService {
 
   private sendWelcome(ws: ExtendedWebSocket, channels: string[]): void {
     this.sendMessage(ws, {
-      type: 'WELCOME',
-      payload: {
-        clientId: ws.clientId,
-        userId: ws.auth.userId,
-        role: ws.auth.role,
-        channels,
-        timestamp: new Date().toISOString()
+      type: 'WELCOME', payload: {
+        clientId: ws.clientId, userId: ws.auth.userId, role: ws.auth.role,
+        channels, timestamp: new Date().toISOString()
       }
     });
   }
@@ -275,15 +215,12 @@ export class WebSocketService {
       for (const [clientId, ws] of this.clients.entries()) {
         if (!ws.isAlive) {
           logger.debug({ clientId }, 'Terminating inactive connection');
-          ws.terminate();
-          return;
+          return void ws.terminate();
         }
-
         ws.isAlive = false;
         ws.ping();
       }
     }, Config.websocket.heartbeatInterval);
-
     logger.info({ interval: Config.websocket.heartbeatInterval }, 'Heartbeat mechanism started');
   }
 
@@ -291,17 +228,13 @@ export class WebSocketService {
     const urlObj = new URL(url, 'ws://localhost');
     const tokenFromQuery = urlObj.searchParams.get('token');
 
-    if (tokenFromQuery) {
-      return tokenFromQuery;
-    }
+    if (tokenFromQuery) return tokenFromQuery;
 
     if (authHeader) {
       const match = authHeader.match(/^Bearer\s+(.+)$/i);
-      if (match) {
+      if (match)
         return match[1];
-      }
     }
-
     return null;
   }
 
@@ -310,34 +243,20 @@ export class WebSocketService {
       const decoded = jwt.verify(token, Config.websocket.jwtSecret) as TokenPayload;
       return decoded;
     } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        throw new Error('TOKEN_EXPIRED');
-      } else if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error('TOKEN_INVALID');
-      } else {
-        throw new Error('TOKEN_VERIFICATION_FAILED');
-      }
+      if (error instanceof jwt.TokenExpiredError) throw new Error('TOKEN_EXPIRED');
+      else if (error instanceof jwt.JsonWebTokenError) throw new Error('TOKEN_INVALID');
+      else throw new Error('TOKEN_VERIFICATION_FAILED');
     }
   }
 
   private canAccessChannel(client: AuthenticatedClient, channel: string): boolean {
-    if (client.role === 'admin') {
-      return true;
-    }
-
+    if (client.role === 'admin') return true;
     if (client.role === 'operator') {
-      if (channel === 'alerts' || channel === 'tariffs' || channel === 'alert_status_updates') {
-        return true;
-      }
-      if (channel.startsWith('region:')) {
-        return true;
-      }
+      if (channel === 'alerts' || channel === 'tariffs' || channel === 'alert_status_updates') return true;
+      if (channel.startsWith('region:')) return true;
     }
 
-    if (channel === 'tariffs') {
-      return true;
-    }
-
+    if (channel === 'tariffs') return true;
     if (channel.startsWith('region:') && client.region) {
       const channelRegion = channel.split(':')[1];
       return channelRegion === client.region;
@@ -347,45 +266,27 @@ export class WebSocketService {
       const channelMeter = channel.split(':')[1];
       return channelMeter === client.meterId;
     }
-
     return false;
   }
 
   private getDefaultChannels(client: AuthenticatedClient): string[] {
     const channels: string[] = [];
 
-    if (client.role === 'admin' || client.role === 'operator') {
+    if (client.role === 'admin' || client.role === 'operator')
       channels.push('alerts', 'tariffs', 'alert_status_updates');
-    } else {
+
+    else
       channels.push('tariffs');
-    }
 
-    if (client.region) {
-      channels.push(`region:${client.region}`);
-    }
-
-    if (client.meterId) {
-      channels.push(`meter:${client.meterId}`);
-    }
+    if (client.region) channels.push(`region:${client.region}`);
+    if (client.meterId) channels.push(`meter:${client.meterId}`);
 
     return channels;
   }
 
-  getStats(): {
-    totalConnections: number;
-    activeChannels: number;
-    channelStats: { channel: string; subscribers: number }[];
-  } {
-    const channelStats = Array.from(this.subscriptions.entries()).map(([channel, subscribers]) => ({
-      channel,
-      subscribers: subscribers.size
-    }));
-
-    return {
-      totalConnections: this.clients.size,
-      activeChannels: this.subscriptions.size,
-      channelStats
-    };
+  getStats(): { totalConnections: number; activeChannels: number; channelStats: { channel: string; subscribers: number }[]; } {
+    const channelStats = Array.from(this.subscriptions.entries()).map(([channel, subscribers]) => ({ channel, subscribers: subscribers.size }));
+    return { totalConnections: this.clients.size, activeChannels: this.subscriptions.size, channelStats };
   }
 
   async shutdown(): Promise<void> {

@@ -58,6 +58,22 @@ export type Aggregate15m = AggregateBase & {
 export type Aggregate = Aggregate1m | Aggregate15m;
 
 /**
+ * Regional aggregate for a geographic region.
+ * Aggregates data from all meters within a region.
+ */
+export interface RegionalAggregate {
+  region: string;
+  timestamp: string;
+  meter_count: number;
+  total_consumption: number;
+  avg_consumption: number;
+  max_consumption: number;
+  min_consumption: number;
+  load_percentage: number;
+  active_meters: string[];
+}
+
+/**
  * Type guard to check if an object is a valid Aggregate1m
  */
 export function isAggregate1m(obj: unknown): obj is Aggregate1m {
@@ -82,5 +98,21 @@ export function isAggregate15m(obj: unknown): obj is Aggregate15m {
     agg.granularity === '15m' &&
     typeof agg.meterId === 'string' &&
     typeof agg.avgPowerKw === 'number'
+  );
+}
+
+/**
+ * Type guard to check if an object is a valid RegionalAggregate
+ */
+export function isRegionalAggregate(obj: unknown): obj is RegionalAggregate {
+  const agg = obj as RegionalAggregate;
+  return (
+    typeof agg === 'object' &&
+    agg !== null &&
+    typeof agg.region === 'string' &&
+    typeof agg.timestamp === 'string' &&
+    typeof agg.meter_count === 'number' &&
+    typeof agg.total_consumption === 'number' &&
+    typeof agg.load_percentage === 'number'
   );
 }

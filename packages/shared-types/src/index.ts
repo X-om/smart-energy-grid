@@ -28,3 +28,6 @@ export * from './billing.js';
 
 // Common utility types and interfaces
 export * from './common.js';
+
+// Kafka message types
+export * from './kafka-messages.js';

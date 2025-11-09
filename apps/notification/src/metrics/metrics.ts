@@ -2,7 +2,6 @@ import { register, Counter, Gauge, Histogram } from 'prom-client';
 import { metricsLogger as logger } from '../utils/logger.js';
 
 class MetricsService {
-  // WebSocket connection metrics
   public wsConnectionsTotal!: Gauge;
   public wsConnectionsActive!: Gauge;
   public wsMessagesSentTotal!: Counter;
@@ -10,18 +9,13 @@ class MetricsService {
   public wsBroadcastLatencyMs!: Histogram;
   public wsAuthFailuresTotal!: Counter;
 
-  // Kafka consumer metrics
   public kafkaMessagesConsumedTotal!: Counter;
   public kafkaMessagesProcessingDurationMs!: Histogram;
   public kafkaMessagesProcessingErrorsTotal!: Counter;
 
-  // Channel subscription metrics
   public channelSubscribersGauge!: Gauge;
-
-  // Connection status
   public kafkaConnectionStatus!: Gauge;
 
-  // System metrics
   public httpRequestsTotal!: Counter;
   public httpRequestDurationMs!: Histogram;
 
@@ -31,7 +25,7 @@ class MetricsService {
   }
 
   private initializeMetrics(): void {
-    // WebSocket connection metrics
+
     this.wsConnectionsTotal = new Gauge({
       name: 'ws_connections_total',
       help: 'Total number of WebSocket connections ever established'
@@ -87,20 +81,17 @@ class MetricsService {
       labelNames: ['topic', 'error_type']
     });
 
-    // Channel subscription metrics
     this.channelSubscribersGauge = new Gauge({
       name: 'channel_subscribers_total',
       help: 'Number of subscribers per channel',
       labelNames: ['channel']
     });
 
-    // Connection status
     this.kafkaConnectionStatus = new Gauge({
       name: 'kafka_connection_status',
       help: 'Kafka connection status (1 = connected, 0 = disconnected)'
     });
 
-    // System metrics
     this.httpRequestsTotal = new Counter({
       name: 'http_requests_total',
       help: 'Total number of HTTP requests',
@@ -115,7 +106,7 @@ class MetricsService {
     });
   }
 
-  // WebSocket metrics methods
+  // * WebSocket metrics methods
   incrementConnectionsTotal(): void {
     this.wsConnectionsTotal.inc();
   }
@@ -140,7 +131,7 @@ class MetricsService {
     this.wsAuthFailuresTotal.inc({ reason });
   }
 
-  // Kafka metrics methods
+  // * Kafka metrics methods
   incrementKafkaMessagesConsumed(topic: string): void {
     this.kafkaMessagesConsumedTotal.inc({ topic });
   }
@@ -153,17 +144,17 @@ class MetricsService {
     this.kafkaMessagesProcessingErrorsTotal.inc({ topic, error_type: errorType });
   }
 
-  // Channel metrics methods
+  // * Channel metrics methods
   updateChannelSubscribers(channel: string, count: number): void {
     this.channelSubscribersGauge.set({ channel }, count);
   }
 
-  // Connection status methods
+  // * Connection status methods
   setKafkaConnectionStatus(connected: boolean): void {
     this.kafkaConnectionStatus.set(connected ? 1 : 0);
   }
 
-  // HTTP metrics methods
+  // * HTTP metrics methods
   incrementHttpRequests(method: string, path: string, statusCode: number): void {
     this.httpRequestsTotal.inc({ method, path, status_code: statusCode.toString() });
   }
@@ -172,12 +163,12 @@ class MetricsService {
     this.httpRequestDurationMs.observe({ method, path }, durationMs);
   }
 
-  // Get all metrics
+  // * Get all metrics
   async getMetrics(): Promise<string> {
     return await register.metrics();
   }
 
-  // Reset all metrics (useful for testing)
+  // * Reset all metrics (useful for testing)
   reset(): void {
     register.clear();
     this.initializeMetrics();

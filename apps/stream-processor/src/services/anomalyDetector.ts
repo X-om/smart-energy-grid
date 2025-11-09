@@ -80,7 +80,7 @@ export class AnomalyDetectorService {
         logger.warn({ meterId, baseline, current: powerKw, changePercent: changePercent.toFixed(1) }, 'Power consumption spike detected');
 
         return this.createAlert({
-          type: 'ANOMALY', severity: change > 2.0 ? 'ERROR' : 'WARN', meterId, region, timestamp,
+          type: 'ANOMALY', severity: change > 2.0 ? 'high' : 'medium', meterId, region, timestamp,
           message: `Sudden power consumption spike: ${changePercent.toFixed(1)}% increase (baseline: ${baseline.toFixed(2)} kW, current: ${powerKw.toFixed(2)} kW)`,
           metadata: { baseline, current: powerKw, change: changePercent, type: 'spike' }
         });
@@ -89,7 +89,7 @@ export class AnomalyDetectorService {
       if (change < -this.config.dropThreshold) {
         logger.warn({ meterId, baseline, current: powerKw, changePercent: changePercent.toFixed(1) }, 'Power consumption drop detected');
         return this.createAlert({
-          type: 'ANOMALY', severity: change < -0.8 ? 'WARN' : 'INFO', meterId, region, timestamp,
+          type: 'ANOMALY', severity: change < -0.8 ? 'medium' : 'low', meterId, region, timestamp,
           message: `Sudden power consumption drop: ${changePercent.toFixed(1)}% decrease (baseline: ${baseline.toFixed(2)} kW, current: ${powerKw.toFixed(2)} kW)`,
           metadata: { baseline, current: powerKw, change: changePercent, type: 'drop' },
         });
@@ -99,7 +99,7 @@ export class AnomalyDetectorService {
       if (powerKw < 0.1 && baseline > 1.0) {
         logger.warn({ meterId, baseline, current: powerKw }, 'Possible outage detected');
         return this.createAlert({
-          type: 'ANOMALY', severity: 'ERROR', meterId, region, timestamp,
+          type: 'ANOMALY', severity: 'high', meterId, region, timestamp,
           message: `Possible outage: power consumption near zero (baseline: ${baseline.toFixed(2)} kW, current: ${powerKw.toFixed(2)} kW)`,
           metadata: { baseline, current: powerKw, type: 'outage' }
         });
@@ -129,8 +129,8 @@ export class AnomalyDetectorService {
   // TODO : CREATE A SEPARATE INTERFACE FOR createAlert PARAMS
   private createAlert(params: CreateAlertParams): Alert {
     return {
-      alertId: uuidv4(), type: params.type, severity: params.severity,
-      meterId: params.meterId, region: params.region, message: params.message,
+      id: uuidv4(), type: params.type, severity: params.severity,
+      meter_id: params.meterId, region: params.region, message: params.message,
       timestamp: params.timestamp, metadata: params.metadata
     };
   }

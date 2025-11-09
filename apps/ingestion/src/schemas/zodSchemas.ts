@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const readingSchema = z.object({
+  readingId: z.string().min(1, 'Reading ID is required'),
   meterId: z.string().min(1, 'Meter ID is required'),
   region: z.string().min(1, 'Region is required'),
   timestamp: z.string().datetime('Invalid timestamp format'),

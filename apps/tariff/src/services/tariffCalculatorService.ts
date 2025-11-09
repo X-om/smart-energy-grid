@@ -53,10 +53,14 @@ export class TariffCalculatorService {
   }
 
   private calculateLoadPercentage(aggregate: RegionalAggregate): number {
-    const capacity = this.regionalCapacity.get(aggregate.region) || 1000;
-    const currentLoadMw = aggregate.avgPowerKw / 1000;
-    const loadPercent = (currentLoadMw / capacity) * 100;
-    logger.debug({ region: aggregate.region, currentLoadMw, capacity, loadPercent: loadPercent.toFixed(2) }, 'Load calculation');
+    // Use the load_percentage already calculated by stream-processor
+    const loadPercent = aggregate.load_percentage;
+    logger.debug({
+      region: aggregate.region,
+      totalConsumption: aggregate.total_consumption,
+      meterCount: aggregate.meter_count,
+      loadPercent: loadPercent.toFixed(2)
+    }, 'Load calculation');
     return loadPercent;
   }
 
@@ -106,7 +110,7 @@ export class TariffCalculatorService {
         tariffId: uuidv4(),
         region: aggregate.region,
         pricePerKwh: newPrice,
-        effectiveFrom: new Date().toISOString(),
+        effectiveFrom: aggregate.timestamp,
         reason: `AUTO: ${reason}`,
         triggeredBy: 'AUTO',
         oldPrice: lastPrice,

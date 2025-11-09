@@ -1,20 +1,14 @@
 import pkg from 'pino';
-// @ts-ignore - pino typing issue with ES modules
 const pino = pkg.default || pkg;
-
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Create base logger
 export const logger = pino({
-  name: process.env.SERVICE_NAME || 'notification-service',
-  level: process.env.LOG_LEVEL || 'info',
+  name: process.env.SERVICE_NAME || 'notification-service', level: process.env.LOG_LEVEL || 'info',
   ...(isDevelopment && {
     transport: {
       target: 'pino-pretty',
       options: {
-        colorize: true,
-        translateTime: 'yyyy-mm-dd HH:MM:ss.l o',
-        ignore: 'pid,hostname'
+        colorize: true, translateTime: 'yyyy-mm-dd HH:MM:ss.l o', ignore: 'pid,hostname'
       }
     }
   }),
@@ -24,10 +18,7 @@ export const logger = pino({
   }
 });
 
-// Create child loggers for different components
-export const createLogger = (component: string) => {
-  return logger.child({ component });
-};
+export const createLogger = (component: string) => logger.child({ component });
 
 export const kafkaLogger = createLogger('kafka');
 export const wsLogger = createLogger('websocket');

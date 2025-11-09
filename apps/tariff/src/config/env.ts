@@ -9,7 +9,7 @@ export const config = {
     brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
     clientId: process.env.KAFKA_CLIENT_ID || 'tariff-service',
     groupId: process.env.KAFKA_GROUP_ID || 'tariff-group',
-    topicInput: process.env.KAFKA_TOPIC_INPUT || 'aggregates_1m',
+    topicInput: process.env.KAFKA_TOPIC_INPUT || 'aggregates_1m_regional',
     topicOutput: process.env.KAFKA_TOPIC_OUTPUT || 'tariff_updates',
   },
   postgres: {
