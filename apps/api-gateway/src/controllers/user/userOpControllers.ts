@@ -6,7 +6,7 @@ import { ApiResponse } from '../../types/index.js';
 import * as userService from '../../db/services/userPostgresService.js';
 import { IRegisterResponseData } from '../../types/responseTypes.js';
 
-export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const registerController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, email } = req.body;
     const existingUser = await userService.findUserByEmail(postgresPool, email);
@@ -32,7 +32,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
-export const verifyOTP = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const verifyOTPController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, otp } = req.body;
     const user = await userService.findUserByEmail(postgresPool, email);

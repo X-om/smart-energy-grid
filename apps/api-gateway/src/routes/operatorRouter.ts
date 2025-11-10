@@ -7,7 +7,6 @@ const router: IRouter = Router();
 
 router.get('/users', getAllUsersInputValidation, getAllUsers);
 router.get('/users/region/:region', getUsersByRegionInputValidation, getUsersByRegion);
-
 router.post('/operation', operatorOperation);
 
 export default router;

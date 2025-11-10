@@ -27,6 +27,7 @@ export async function createUser(pool: Pool, name: string, email: string): Promi
 export async function findUserByEmail(pool: Pool, email: string): Promise<User | null> {
   const query = 'SELECT * FROM users WHERE email = $1';
   const result = await pool.query<User>(query, [email]);
+
   return result.rows[0] || null;
 }
 
