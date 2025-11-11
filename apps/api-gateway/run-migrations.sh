@@ -4,14 +4,45 @@ set -e
 
 echo "🚀 Running API Gateway migrations..."
 
-POSTGRES_HOST=${POSTGRES_HOST:-localhost}
-POSTGRES_PORT=${POSTGRES_PORT:-5432}
-POSTGRES_USER=${POSTGRES_USER:-segs_user}
-POSTGRES_DB=${POSTGRES_DB:-segs_db}
+# Use Docker exec instead of direct psql connection
+CONTAINER_NAME="segs-postgres"
+DB_USER="segs_user"
+DB_NAME="segs_db"
+MIGRATIONS_DIR="src/db/migrations"
 
-export PGPASSWORD=${POSTGRES_PASSWORD:-segs_password}
+# Check if Docker container is running
+if ! docker ps | grep -q "$CONTAINER_NAME"; then
+    echo "❌ Error: PostgreSQL container '$CONTAINER_NAME' is not running"
+    echo "Start it with: docker-compose up -d postgres"
+    exit 1
+fi
 
-echo "📝 Running migration: 001_create_users.sql"
-psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f src/db/migrations/001_create_users.sql
+# Array of migration files in order (only new ones needed)
+migrations=(
+    "002_create_sessions.sql"
+    "003_create_token_blacklist.sql"
+    "004_create_user_preferences.sql"
+    "005_create_payment_transactions.sql"
+)
 
-echo "✅ Migrations completed successfully!"
+# Run each migration
+for migration in "${migrations[@]}"; do
+    if [ -f "$MIGRATIONS_DIR/$migration" ]; then
+        echo "📝 Running migration: $migration"
+        docker exec -i "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" < "$MIGRATIONS_DIR/$migration"
+        if [ $? -eq 0 ]; then
+            echo "✅ Success: $migration"
+        else
+            echo "❌ Failed: $migration"
+            exit 1
+        fi
+    else
+        echo "⚠️  Skipping (not found): $migration"
+    fi
+done
+
+echo ""
+echo "✅ All migrations completed successfully!"
+echo ""
+echo "Current database tables:"
+docker exec "$CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -c "\dt"

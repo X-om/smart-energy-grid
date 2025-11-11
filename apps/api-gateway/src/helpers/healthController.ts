@@ -10,49 +10,27 @@ export async function healthController(_req: Request, res: Response): Promise<vo
   try {
     await postgresPool.query('SELECT 1');
     postgresStatus = 'up';
-  } catch (error) {
-    // PostgreSQL is down
-  }
+  } catch (error) {/* PostgreSQL is down */ }
 
   try {
     await timescalePool.query('SELECT 1');
     timescaleStatus = 'up';
-  } catch (error) {
-    // TimescaleDB is down
-  }
+  } catch (error) {/* TimescaleDB is down */ }
 
   try {
     await redisClient.ping();
     redisStatus = 'up';
-  } catch (error) {
-    // Redis is down
-  }
+  } catch (error) {/* Redis is down */ }
 
   const allUp = postgresStatus === 'up' && timescaleStatus === 'up' && redisStatus === 'up';
   const statusCode = allUp ? 200 : 503;
 
-  const response: ApiResponse<{
-    status: string;
-    timestamp: string;
-    uptime: number;
-    services: {
-      postgres: string;
-      timescale: string;
-      redis: string;
-    };
-  }> = {
-    success: allUp,
-    data: {
+  const response: ApiResponse<{ status: string; timestamp: string; uptime: number; services: { postgres: string; timescale: string; redis: string; }; }> = {
+    success: allUp, data: {
       status: allUp ? 'healthy' : 'degraded',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      services: {
-        postgres: postgresStatus,
-        timescale: timescaleStatus,
-        redis: redisStatus,
-      },
+      timestamp: new Date().toISOString(), uptime: process.uptime(),
+      services: { postgres: postgresStatus, timescale: timescaleStatus, redis: redisStatus }
     },
   };
-
-  res.status(statusCode).json(response);
+  return void res.status(statusCode).json(response);
 }

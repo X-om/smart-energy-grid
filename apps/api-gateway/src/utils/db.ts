@@ -13,6 +13,7 @@ export const postgresPool = new Pool({
   max: 20,
 });
 postgresPool.on('error', (err) => logger.error('Unexpected PostgreSQL error', err));
+export const pool = postgresPool;
 
 // TimescaleDB Pool
 export const timescalePool = new Pool({
@@ -26,11 +27,18 @@ export const timescalePool = new Pool({
 timescalePool.on('error', (err) => logger.error('Unexpected TimescaleDB error', err));
 
 // Redis Client
-export const redisClient: RedisClientType = createClient({ socket: { host: env.REDIS_HOST, port: env.REDIS_PORT, reconnectStrategy: false } });
+export const redisClient: RedisClientType = createClient({
+  socket: {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+    reconnectStrategy: false,
+  }
+});
 
 redisClient.on('error', (err) => {
-  if (!err.message.includes('ECONNREFUSED'))
+  if (err.code !== 'ECONNREFUSED') {
     logger.error('Redis error', err);
+  }
 });
 
 export const connectDatabases = async (): Promise<void> => {
@@ -69,7 +77,11 @@ export const connectDatabases = async (): Promise<void> => {
 export const disconnectDatabases = async (): Promise<void> => {
   await postgresPool.end();
   await timescalePool.end();
-  await redisClient.quit();
+
+  // Only disconnect if Redis was connected
+  if (redisClient.isOpen) {
+    await redisClient.quit();
+  }
 
   logger.info('All database connections closed');
 }

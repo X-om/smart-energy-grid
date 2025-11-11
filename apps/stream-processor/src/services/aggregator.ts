@@ -11,7 +11,10 @@ interface AggregateWindow {
   region: string;
   powerSum: number;
   maxPower: number;
+  minPower: number;
   energySum: number;
+  voltageSum: number;
+  voltageCount: number;
   count: number;
 }
 
@@ -89,14 +92,30 @@ export class AggregatorService {
 
     if (!bucketMap.has(reading.meterId))
       bucketMap.set(reading.meterId, {
-        meterId: reading.meterId, region: reading.region, powerSum: 0, maxPower: 0, energySum: 0, count: 0
+        meterId: reading.meterId,
+        region: reading.region,
+        powerSum: 0,
+        maxPower: 0,
+        minPower: Infinity,
+        energySum: 0,
+        voltageSum: 0,
+        voltageCount: 0,
+        count: 0
       });
 
     const aggregate = bucketMap.get(reading.meterId)!;
 
     aggregate.powerSum += reading.powerKw;
     aggregate.maxPower = Math.max(aggregate.maxPower, reading.powerKw);
+    aggregate.minPower = Math.min(aggregate.minPower, reading.powerKw);
     aggregate.energySum += reading.energyKwh || 0;
+
+    // Track voltage if available
+    if (reading.voltage !== undefined && reading.voltage !== null) {
+      aggregate.voltageSum += reading.voltage;
+      aggregate.voltageCount += 1;
+    }
+
     aggregate.count += 1;
     aggregate.region = reading.region;
   }
@@ -113,8 +132,16 @@ export class AggregatorService {
       if (bucket < currentBucket) {
         for (const [meterId, window] of meterMap.entries()) {
           aggregates.push({
-            meterId, region: window.region, windowStart: new Date(bucket), avgPowerKw: window.powerSum / window.count,
-            maxPowerKw: window.maxPower, energyKwhSum: window.energySum, count: window.count,
+            meterId,
+            region: window.region,
+            windowStart: new Date(bucket),
+            avgPowerKw: window.powerSum / window.count,
+            maxPowerKw: window.maxPower,
+            minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
+            energyKwhSum: window.energySum,
+            voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
+            currentAvg: 0, // Not available in raw readings
+            count: window.count,
           });
         }
       }
@@ -173,9 +200,16 @@ export class AggregatorService {
       if (bucket < currentBucket) {
         for (const [meterId, window] of meterMap.entries()) {
           aggregates.push({
-            meterId, region: window.region,
-            windowStart: new Date(bucket), avgPowerKw: window.powerSum / window.count,
-            maxPowerKw: window.maxPower, energyKwhSum: window.energySum, count: window.count
+            meterId,
+            region: window.region,
+            windowStart: new Date(bucket),
+            avgPowerKw: window.powerSum / window.count,
+            maxPowerKw: window.maxPower,
+            minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
+            energyKwhSum: window.energySum,
+            voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
+            currentAvg: 0, // Not available in raw readings
+            count: window.count
           });
         }
       }

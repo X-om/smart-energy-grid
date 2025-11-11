@@ -1,13 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { postgresPool } from '../../utils/db.js';
 import { ApiResponse } from '../../types/index.js';
-import * as userService from '../../db/services/userPostgresService.js';
+import * as userService from '../../services/database/user.service.js';
 
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.params.userId;
 
-    const user = await userService.findUserById(postgresPool, userId);
+    const user = await userService.getUserById(userId);
 
     if (!user) {
       res.status(404).json({

@@ -104,7 +104,7 @@ SELECT
     AVG(current) AS current_avg,
     COUNT(*) AS reading_count
 FROM raw_readings
-GROUP BY meter_id, region, window_start;
+GROUP BY meter_id, region, time_bucket('1 minute', timestamp);
 
 -- Add refresh policy (refresh last 2 hours every 1 minute)
 SELECT add_continuous_aggregate_policy('cagg_1m',
@@ -114,30 +114,9 @@ SELECT add_continuous_aggregate_policy('cagg_1m',
     if_not_exists => TRUE
 );
 
--- Create continuous aggregate for 15-minute windows from 1-minute aggregates
-CREATE MATERIALIZED VIEW IF NOT EXISTS cagg_15m
-WITH (timescaledb.continuous) AS
-SELECT
-    meter_id,
-    region,
-    time_bucket('15 minutes', window_start) AS window_start,
-    AVG(avg_power_kw) AS avg_power_kw,
-    MAX(max_power_kw) AS max_power_kw,
-    MIN(min_power_kw) AS min_power_kw,
-    SUM(energy_kwh_sum) AS energy_kwh_sum,
-    AVG(voltage_avg) AS voltage_avg,
-    AVG(current_avg) AS current_avg,
-    SUM(reading_count) AS reading_count
-FROM aggregates_1m
-GROUP BY meter_id, region, window_start;
-
--- Add refresh policy (refresh last 1 day every 15 minutes)
-SELECT add_continuous_aggregate_policy('cagg_15m',
-    start_offset => INTERVAL '1 day',
-    end_offset => INTERVAL '15 minutes',
-    schedule_interval => INTERVAL '15 minutes',
-    if_not_exists => TRUE
-);
+-- Note: We don't create cagg_15m from aggregates_1m because aggregates_1m 
+-- is populated by the stream processor, not by TimescaleDB continuous aggregates.
+-- The stream processor handles both 1m and 15m aggregations from Kafka.
 
 -- ==========================================
 -- DATA RETENTION POLICIES

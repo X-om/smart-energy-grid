@@ -15,7 +15,10 @@ export interface Aggregate1m {
   windowStart: Date;
   avgPowerKw: number;
   maxPowerKw: number;
+  minPowerKw: number;
   energyKwhSum: number;
+  voltageAvg: number;
+  currentAvg: number;
   count: number;
 }
 export interface Aggregate15m extends Aggregate1m { }
@@ -90,20 +93,26 @@ export class TimescaleDBService {
     if (aggregates.length === 0) return 0;
     try {
       const startTime = Date.now();
-      const values = aggregates.map((_agg, idx) => `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`).join(', ');
+      const values = aggregates.map((_agg, idx) =>
+        `($${idx * 10 + 1}, $${idx * 10 + 2}, $${idx * 10 + 3}, $${idx * 10 + 4}, $${idx * 10 + 5}, $${idx * 10 + 6}, $${idx * 10 + 7}, $${idx * 10 + 8}, $${idx * 10 + 9}, $${idx * 10 + 10})`
+      ).join(', ');
 
       const params = aggregates.flatMap((agg) => [
-        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw, agg.energyKwhSum, agg.count
+        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw,
+        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.currentAvg, agg.count
       ]);
       const query = `
-        INSERT INTO aggregates_1m (meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count)
+        INSERT INTO aggregates_1m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, current_avg, count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
           region = EXCLUDED.region,
           avg_power_kw = EXCLUDED.avg_power_kw,
           max_power_kw = EXCLUDED.max_power_kw,
+          min_power_kw = EXCLUDED.min_power_kw,
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
+          voltage_avg = EXCLUDED.voltage_avg,
+          current_avg = EXCLUDED.current_avg,
           count = EXCLUDED.count
       `;
       await this.pool.query(query, params);
@@ -122,20 +131,26 @@ export class TimescaleDBService {
     if (aggregates.length === 0) return 0;
     try {
       const startTime = Date.now();
-      const values = aggregates.map((_agg, idx) => `($${idx * 7 + 1}, $${idx * 7 + 2}, $${idx * 7 + 3}, $${idx * 7 + 4}, $${idx * 7 + 5}, $${idx * 7 + 6}, $${idx * 7 + 7})`).join(', ');
+      const values = aggregates.map((_agg, idx) =>
+        `($${idx * 10 + 1}, $${idx * 10 + 2}, $${idx * 10 + 3}, $${idx * 10 + 4}, $${idx * 10 + 5}, $${idx * 10 + 6}, $${idx * 10 + 7}, $${idx * 10 + 8}, $${idx * 10 + 9}, $${idx * 10 + 10})`
+      ).join(', ');
 
       const params = aggregates.flatMap((agg) => [
-        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw, agg.energyKwhSum, agg.count
+        agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw,
+        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.currentAvg, agg.count
       ]);
       const query = `
-        INSERT INTO aggregates_15m (meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count)
+        INSERT INTO aggregates_15m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, current_avg, count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
           region = EXCLUDED.region,
           avg_power_kw = EXCLUDED.avg_power_kw,
           max_power_kw = EXCLUDED.max_power_kw,
+          min_power_kw = EXCLUDED.min_power_kw,
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
+          voltage_avg = EXCLUDED.voltage_avg,
+          current_avg = EXCLUDED.current_avg,
           count = EXCLUDED.count
       `;
       await this.pool.query(query, params);

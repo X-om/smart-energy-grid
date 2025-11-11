@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import authRouter from './routes/auth.routes.js';
 import userRouter from './routes/userRouter.js';
+import telemetryRouter from './routes/telemetry.routes.js';
 import adminRouter from './routes/adminRouter.js';
 import operatorRouter from './routes/operatorRouter.js';
 
@@ -20,7 +22,10 @@ app.use(cors({ origin: env.CORS_ORIGIN }));
 app.get('/health', healthController);
 app.get('/metrics', metricsController);
 
+// Mount routes
+app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
+app.use('/api/v1/telemetry', telemetryRouter);
 app.use('/api/v1/operator', operatorRouter);
 app.use('/api/v1/admin', adminRouter);
 
@@ -47,9 +52,13 @@ const startServer = async (): Promise<void> => {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error) {
+    console.error('Failed to start server:', error);
     logger.error('Failed to start server', error);
     process.exit(1);
   }
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error('Unhandled error in startServer:', error);
+  process.exit(1);
+});

@@ -1,34 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { postgresPool } from '../../utils/db.js';
-import { PaginatedResponse } from '../../types/index.js';
-import * as operatorService from '../../db/services/operatorPostgresService.js';
+import { paginatedResponse } from '../../utils/response.js';
+import * as userService from '../../services/database/user.service.js';
 
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Validation already done by middleware
-    const { role, region, limit, offset } = req.query;
+    const { role, region, limit = '50', offset = '0' } = req.query;
 
     const filters = {
       role: role as string | undefined,
       region: region as string | undefined,
-      limit: limit ? parseInt(limit as string, 10) : 50,
-      offset: offset ? parseInt(offset as string, 10) : 0,
+      page: Math.floor(parseInt(offset as string, 10) / parseInt(limit as string, 10)) + 1,
+      limit: parseInt(limit as string, 10),
     };
 
-    const { users, total } = await operatorService.getAllUsers(postgresPool, filters);
+    const result = await userService.getUsers(filters);
 
     // Remove sensitive data
-    const sanitizedUsers = users.map(({ password_hash, ...user }) => user);
+    const sanitizedUsers = result.users.map(({ password_hash, ...user }: any) => user);
 
-    res.status(200).json({
-      success: true,
-      data: sanitizedUsers,
-      pagination: {
-        total,
-        limit: filters.limit,
-        offset: filters.offset,
-      },
-    } as PaginatedResponse<any>);
+    paginatedResponse(res, 200, 'Users retrieved successfully', sanitizedUsers, result.page, result.limit, result.total);
   } catch (error) {
     next(error);
   }
@@ -36,13 +26,12 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
 export const getUsersByRegion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Validation already done by middleware
     const { region } = req.params;
 
-    const users = await operatorService.getUsersByRegion(postgresPool, region);
+    const result = await userService.getUsers({ region });
 
     // Remove sensitive data
-    const sanitizedUsers = users.map(({ password_hash, ...user }) => user);
+    const sanitizedUsers = result.users.map(({ password_hash, ...user }: any) => user);
 
     res.status(200).json({
       success: true,

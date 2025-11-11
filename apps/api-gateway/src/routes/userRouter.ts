@@ -1,13 +1,18 @@
 import { Router, type IRouter } from 'express';
-import { getUserProfile } from '../controllers/user/userFetchControllers.js';
-import { registerController, verifyOTPController } from '../controllers/user/userOpControllers.js';
-import { registerInputValidation, verifyOTPInputValidation } from '../middleware/user/inputValidationMiddleware.js';
+import { authenticate } from '../middleware/auth/authenticate.js';
+import { validateRequest } from '../utils/validators.js';
+import { getProfileController, updateProfileController } from '../controllers/user/profile.controller.js';
+import { getPreferencesController, updatePreferencesController } from '../controllers/user/preferences.controller.js';
+import { updateProfileSchema, updatePreferencesSchema } from '../middleware/validation/user.validation.js';
 
 const router: IRouter = Router();
 
-router.post('/register', registerInputValidation, registerController);
-router.post('/verify-otp', verifyOTPInputValidation, verifyOTPController);
+// * Profile routes
+router.get('/profile', authenticate, getProfileController);
+router.put('/profile', authenticate, validateRequest(updateProfileSchema), updateProfileController);
 
-// Protected routes (to be added with auth middleware)
-router.get('/:userId', getUserProfile);
+// * Notification settings routes
+router.get('/notifications/settings', authenticate, getPreferencesController);
+router.put('/notifications/settings', authenticate, validateRequest(updatePreferencesSchema), updatePreferencesController);
+
 export default router;
