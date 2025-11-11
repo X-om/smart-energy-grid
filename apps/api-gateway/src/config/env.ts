@@ -1,21 +1,79 @@
+// Helper to parse PostgreSQL connection URL
+const parsePostgresUrl = (urlOrHost: string | undefined, defaultValues: { host: string; port: number; user: string; password: string; database: string }) => {
+  if (!urlOrHost || !urlOrHost.includes('://')) {
+    return {
+      host: process.env.POSTGRES_HOST || defaultValues.host,
+      port: parseInt(process.env.POSTGRES_PORT || String(defaultValues.port), 10),
+      user: process.env.POSTGRES_USER || defaultValues.user,
+      password: process.env.POSTGRES_PASSWORD || defaultValues.password,
+      database: process.env.POSTGRES_DB || defaultValues.database,
+    };
+  }
+
+  // Parse URL: postgresql://user:password@host:port/database
+  const url = new URL(urlOrHost);
+  return {
+    host: url.hostname,
+    port: parseInt(url.port || String(defaultValues.port), 10),
+    user: url.username || defaultValues.user,
+    password: url.password || defaultValues.password,
+    database: url.pathname.slice(1) || defaultValues.database,
+  };
+};
+
+// Helper to parse Redis connection URL
+const parseRedisUrl = (urlOrHost: string | undefined) => {
+  if (!urlOrHost || !urlOrHost.includes('://')) {
+    return {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    };
+  }
+
+  // Parse URL: redis://host:port
+  const url = new URL(urlOrHost);
+  return {
+    host: url.hostname,
+    port: parseInt(url.port || '6379', 10),
+  };
+};
+
+const postgresConfig = parsePostgresUrl(process.env.POSTGRES_URL, {
+  host: 'localhost',
+  port: 5432,
+  user: 'segs_user',
+  password: 'segs_password',
+  database: 'segs_db',
+});
+
+const timescaleConfig = parsePostgresUrl(process.env.TIMESCALE_URL, {
+  host: 'localhost',
+  port: 5433,
+  user: 'segs_user',
+  password: 'segs_password',
+  database: 'segs_db',
+});
+
+const redisConfig = parseRedisUrl(process.env.REDIS_URL);
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '3000', 10),
 
-  POSTGRES_HOST: process.env.POSTGRES_HOST || 'localhost',
-  POSTGRES_PORT: parseInt(process.env.POSTGRES_PORT || '5432', 10),
-  POSTGRES_USER: process.env.POSTGRES_USER || 'segs_user',
-  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || 'segs_password',
-  POSTGRES_DB: process.env.POSTGRES_DB || 'segs_db',
+  POSTGRES_HOST: postgresConfig.host,
+  POSTGRES_PORT: postgresConfig.port,
+  POSTGRES_USER: postgresConfig.user,
+  POSTGRES_PASSWORD: postgresConfig.password,
+  POSTGRES_DB: postgresConfig.database,
 
-  TIMESCALE_HOST: process.env.TIMESCALE_HOST || 'localhost',
-  TIMESCALE_PORT: parseInt(process.env.TIMESCALE_PORT || '5433', 10),
-  TIMESCALE_USER: process.env.TIMESCALE_USER || 'segs_user',
-  TIMESCALE_PASSWORD: process.env.TIMESCALE_PASSWORD || 'segs_password',
-  TIMESCALE_DB: process.env.TIMESCALE_DB || 'segs_db',
+  TIMESCALE_HOST: timescaleConfig.host,
+  TIMESCALE_PORT: timescaleConfig.port,
+  TIMESCALE_USER: timescaleConfig.user,
+  TIMESCALE_PASSWORD: timescaleConfig.password,
+  TIMESCALE_DB: timescaleConfig.database,
 
-  REDIS_HOST: process.env.REDIS_HOST || 'localhost',
-  REDIS_PORT: parseInt(process.env.REDIS_PORT || '6379', 10),
+  REDIS_HOST: redisConfig.host,
+  REDIS_PORT: redisConfig.port,
 
   JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters-long-for-security',
   JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',

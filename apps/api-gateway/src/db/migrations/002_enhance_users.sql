@@ -17,7 +17,7 @@ BEGIN
     ) THEN
         ALTER TABLE users 
         ADD CONSTRAINT users_region_check 
-        CHECK (region IN ('north', 'south', 'east', 'west', 'central'));
+        CHECK (region IN ('Mumbai-North', 'Mumbai-South', 'Delhi-North', 'Delhi-South', 'Bangalore-East', 'Bangalore-West', 'Pune-East', 'Pune-West', 'Hyderabad-Central', 'Chennai-North'));
     END IF;
 END $$;
 

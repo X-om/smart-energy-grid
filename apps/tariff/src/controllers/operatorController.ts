@@ -76,5 +76,45 @@ export const createOperatorController = (overrideHandler: OverrideHandlerService
     }
   };
 
-  return { tariffOverrideController, getCurrentTariffController, getTariffHistoryController, getAllTariffsController };
+  const removeTariffOverrideController = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { tariffId } = req.params;
+
+      if (!tariffId)
+        return void res.status(400).json({
+          status: 'error', message: 'Tariff ID is required'
+        });
+
+      const result = await overrideHandler.removeOverride(tariffId);
+
+      if (result.success)
+        return void res.status(200).json({
+          status: 'success', message: result.message,
+          data: {
+            tariffId: result.tariffId,
+            region: result.region,
+            oldPrice: result.oldPrice,
+            newPrice: result.newPrice,
+            revertedToAutomatic: true
+          }
+        });
+
+      // Tariff not found
+      if (result.message.includes('not found'))
+        return void res.status(404).json({ status: 'error', message: result.message });
+
+      return void res.status(500).json({ status: 'error', message: result.message });
+    } catch (error) {
+      logger.error({ error }, 'Error removing tariff override');
+      return void res.status(500).json({ status: 'error', message: 'Internal server error' });
+    }
+  };
+
+  return {
+    tariffOverrideController,
+    getCurrentTariffController,
+    getTariffHistoryController,
+    getAllTariffsController,
+    removeTariffOverrideController
+  };
 };

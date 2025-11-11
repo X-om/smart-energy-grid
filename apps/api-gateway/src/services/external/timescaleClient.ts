@@ -7,7 +7,9 @@ interface AggregateRow {
   window_start: Date;
   avg_power_kw: number;
   max_power_kw: number;
+  min_power_kw: number;
   energy_kwh_sum: number;
+  voltage_avg: number;
   count: number;
 }
 
@@ -51,7 +53,7 @@ interface TopConsumer {
 // * Get latest reading for a specific meter
 export const getLatestReading = async (meterId: string): Promise<AggregateRow | null> => {
   const query = `
-    SELECT meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count
+    SELECT meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, count
     FROM aggregates_1m
     WHERE meter_id = $1
     ORDER BY window_start DESC
@@ -67,7 +69,7 @@ export const getMeterHistory = async (meterId: string, resolution: '1m' | '15m',
   const tableName = resolution === '1m' ? 'aggregates_1m' : 'aggregates_15m';
 
   const query = `
-    SELECT meter_id, region, window_start, avg_power_kw, max_power_kw, energy_kwh_sum, count
+    SELECT meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, count
     FROM ${tableName}
     WHERE meter_id = $1
       AND window_start >= $2
@@ -86,7 +88,7 @@ export const getMeterStats = async (meterId: string, startTime: Date, endTime: D
       SUM(energy_kwh_sum) as total_consumption_kwh,
       AVG(avg_power_kw) as avg_power_kw,
       MAX(max_power_kw) as max_power_kw,
-      MIN(avg_power_kw) as min_power_kw,
+      MIN(min_power_kw) as min_power_kw,
       SUM(count) as data_points
     FROM aggregates_15m
     WHERE meter_id = $1

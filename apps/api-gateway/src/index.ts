@@ -4,6 +4,8 @@ import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
 import userRouter from './routes/userRouter.js';
 import telemetryRouter from './routes/telemetry.routes.js';
+import tariffRouter from './routes/tariff.routes.js';
+import alertRouter from './routes/alert.routes.js';
 import adminRouter from './routes/adminRouter.js';
 import operatorRouter from './routes/operatorRouter.js';
 
@@ -22,10 +24,11 @@ app.use(cors({ origin: env.CORS_ORIGIN }));
 app.get('/health', healthController);
 app.get('/metrics', metricsController);
 
-// Mount routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/telemetry', telemetryRouter);
+app.use('/api/v1/tariff', tariffRouter);
+app.use('/api/v1/alerts', alertRouter);
 app.use('/api/v1/operator', operatorRouter);
 app.use('/api/v1/admin', adminRouter);
 

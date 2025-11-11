@@ -140,7 +140,6 @@ export class AggregatorService {
             minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
             energyKwhSum: window.energySum,
             voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
-            currentAvg: 0, // Not available in raw readings
             count: window.count,
           });
         }
@@ -208,7 +207,6 @@ export class AggregatorService {
             minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
             energyKwhSum: window.energySum,
             voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
-            currentAvg: 0, // Not available in raw readings
             count: window.count
           });
         }

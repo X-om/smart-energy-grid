@@ -140,6 +140,40 @@ export class PostgresService {
     }
   }
 
+  public async getTariffById(tariffId: string): Promise<TariffRecord | null> {
+    try {
+      const query = `
+      SELECT 
+      tariff_id as "tariffId", 
+      region, 
+      price_per_kwh as "pricePerKwh", 
+      effective_from as "effectiveFrom", 
+      reason, 
+      triggered_by as "triggeredBy", 
+      created_at as "createdAt" 
+      FROM tariffs WHERE tariff_id = $1`;
+
+      const result = await this.pool.query(query, [tariffId]);
+      return result.rows.length === 0 ? null : result.rows[0];
+    } catch (error) {
+      logger.error({ error, tariffId }, 'Failed to get tariff by ID');
+      throw error;
+    }
+  }
+
+  public async deleteTariff(tariffId: string): Promise<boolean> {
+    try {
+      const query = `DELETE FROM tariffs WHERE tariff_id = $1`;
+      const result = await this.pool.query(query, [tariffId]);
+
+      logger.debug({ tariffId, deleted: result.rowCount }, 'Tariff deletion attempted');
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      logger.error({ error, tariffId }, 'Failed to delete tariff');
+      throw error;
+    }
+  }
+
   public isConnected(): boolean { return this.connected; }
 
   public getStats() {

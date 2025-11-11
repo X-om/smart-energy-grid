@@ -118,4 +118,54 @@ export class OverrideHandlerService {
       return [];
     }
   }
+
+  async removeOverride(tariffId: string): Promise<OverrideResponse> {
+    try {
+      // Get the tariff to find its region
+      const tariff = await this.db.getTariffById(tariffId);
+      if (!tariff) {
+        return { success: false, message: 'Tariff override not found' };
+      }
+
+      // Delete the override from database
+      const deleted = await this.db.deleteTariff(tariffId);
+      if (!deleted) {
+        return { success: false, message: 'Failed to delete tariff override' };
+      }
+
+      // Get the most recent tariff for this region (after deleting the override)
+      const latestTariff = await this.db.getCurrentTariff(tariff.region);
+
+      if (latestTariff) {
+        // Update cache with the new current price
+        await this.cache.setTariff(tariff.region, latestTariff.pricePerKwh);
+
+        // Publish update to Kafka
+        const tariffUpdate: TariffUpdate = {
+          tariffId: latestTariff.tariffId,
+          region: tariff.region,
+          pricePerKwh: latestTariff.pricePerKwh,
+          effectiveFrom: latestTariff.effectiveFrom.toISOString(),
+          reason: 'Override removed - reverted to previous tariff',
+          triggeredBy: 'SYSTEM',
+          oldPrice: tariff.pricePerKwh,
+        };
+        await this.producer.publishTariffUpdate(tariffUpdate, this.outputTopic);
+      }
+
+      logger.info({ tariffId, region: tariff.region }, 'Tariff override removed');
+
+      return {
+        success: true,
+        message: 'Tariff override removed successfully',
+        tariffId,
+        region: tariff.region,
+        oldPrice: tariff.pricePerKwh,
+        newPrice: latestTariff?.pricePerKwh,
+      };
+    } catch (error) {
+      logger.error({ error, tariffId }, 'Failed to remove tariff override');
+      return { success: false, message: 'Internal server error' };
+    }
+  }
 }

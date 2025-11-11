@@ -10,6 +10,7 @@ import { AggregateHelper } from '../helpers/aggregateHelper.js';
 import { AlertHelper } from '../helpers/alertHelper.js';
 import { getHealth, getMetrics } from '../controllers/healthController.js';
 import { operatorRouter } from '../routes/operatorRouter.js';
+import { userRouter } from '../routes/userRouter.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('lifecycle');
@@ -91,6 +92,7 @@ export const createApp = (): Application => {
   });
 
   app.use('/operator', operatorRouter);
+  app.use('/user', userRouter);
   app.get('/metrics', getMetrics);
   app.get('/health', getHealth);
 

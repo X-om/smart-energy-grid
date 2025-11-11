@@ -33,6 +33,25 @@ export interface AlertThresholds {
   readonly deduplicationMinutes: number;
 }
 
+// Helper to build PostgreSQL URL from individual env vars
+const buildPostgresUrl = (): string => {
+  const host = process.env.POSTGRES_HOST || 'localhost';
+  const port = process.env.POSTGRES_PORT || '5432';
+  const db = process.env.POSTGRES_DB || 'segs_db';
+  const user = process.env.POSTGRES_USER || 'segs_user';
+  const password = process.env.POSTGRES_PASSWORD || 'segs_password';
+
+  return `postgresql://${user}:${password}@${host}:${port}/${db}`;
+};
+
+// Helper to build Redis URL from individual env vars
+const buildRedisUrl = (): string => {
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = process.env.REDIS_PORT || '6379';
+
+  return `redis://${host}:${port}`;
+};
+
 export const Config = {
   server: {
     port: parseInt(process.env.PORT || '3004', 10),
@@ -41,11 +60,11 @@ export const Config = {
   } as ServerConfig,
 
   postgres: {
-    connectionString: process.env.POSTGRES_URL || 'postgresql://energy_user:energy_pass@localhost:5432/energy_grid'
+    connectionString: process.env.POSTGRES_URL || buildPostgresUrl()
   } as PostgresConfig,
 
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: process.env.REDIS_URL || buildRedisUrl(),
     ttl: 3600
   } as RedisConfig,
 

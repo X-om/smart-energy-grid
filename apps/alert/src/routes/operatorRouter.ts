@@ -1,28 +1,24 @@
-import express, { Router } from 'express';
+import express, { Router, Request, Response } from 'express';
 import { createOperatorController } from '../controllers/operatorController.js';
 import { AlertManagerService } from '../services/alertManagerService.js';
 
 export const operatorRouter: Router = express.Router();
+let controllers: ReturnType<typeof createOperatorController> | null = null;
 
-const alertManager = AlertManagerService.getInstance();
-const {
-  getAlertsController,
-  getActiveAlertsController,
-  getAlertHistoryController,
-  getAlertByIdController,
-  acknowledgeAlertController,
-  resolveAlertController,
-  bulkResolveAlertsController,
-  getAlertStatsController,
-  autoResolveOldAlertsController
-} = createOperatorController(alertManager);
+const getControllers = () => {
+  if (!controllers) {
+    const alertManager = AlertManagerService.getInstance();
+    controllers = createOperatorController(alertManager);
+  }
+  return controllers;
+};
 
-operatorRouter.get('/alerts', getAlertsController);
-operatorRouter.get('/alerts/active', getActiveAlertsController);
-operatorRouter.get('/alerts/history/:region', getAlertHistoryController);
-operatorRouter.get('/alerts/:id', getAlertByIdController);
-operatorRouter.post('/alerts/:id/acknowledge', acknowledgeAlertController);
-operatorRouter.post('/alerts/:id/resolve', resolveAlertController);
-operatorRouter.post('/alerts/bulk-resolve', bulkResolveAlertsController);
-operatorRouter.get('/alerts/stats', getAlertStatsController);
-operatorRouter.post('/alerts/auto-resolve', autoResolveOldAlertsController);
+operatorRouter.get('/alerts', (req: Request, res: Response) => getControllers().getAlertsController(req, res));
+operatorRouter.get('/alerts/active', (req: Request, res: Response) => getControllers().getActiveAlertsController(req, res));
+operatorRouter.get('/alerts/stats', (req: Request, res: Response) => getControllers().getAlertStatsController(req, res));
+operatorRouter.get('/alerts/history/:region', (req: Request, res: Response) => getControllers().getAlertHistoryController(req, res));
+operatorRouter.get('/alerts/:id', (req: Request, res: Response) => getControllers().getAlertByIdController(req, res));
+operatorRouter.post('/alerts/bulk-resolve', (req: Request, res: Response) => getControllers().bulkResolveAlertsController(req, res));
+operatorRouter.post('/alerts/auto-resolve', (req: Request, res: Response) => getControllers().autoResolveOldAlertsController(req, res));
+operatorRouter.post('/alerts/:id/acknowledge', (req: Request, res: Response) => getControllers().acknowledgeAlertController(req, res));
+operatorRouter.post('/alerts/:id/resolve', (req: Request, res: Response) => getControllers().resolveAlertController(req, res));

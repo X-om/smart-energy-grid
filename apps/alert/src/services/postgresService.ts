@@ -105,9 +105,8 @@ export class PostgresService {
   private async runMigrations(): Promise<void> {
     try {
       logger.info('Running database migrations...');
-      const migrationPath = join(__dirname, '../db/migrations', '001_create_alerts_table.sql');
+      const migrationPath = join(__dirname, '../db/migrations', '001_create_alerts.sql');
       const schemaSQL = readFileSync(migrationPath, 'utf-8');
-
       await this.pool.query(schemaSQL);
       logger.info('Database migrations completed successfully');
     } catch (error) {

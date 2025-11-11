@@ -38,6 +38,8 @@ END;
 $$ language 'plpgsql';
 
 -- Create trigger to automatically update updated_at on row updates
+-- Drop trigger if it exists before recreating
+DROP TRIGGER IF EXISTS update_alerts_updated_at ON alerts;
 CREATE TRIGGER update_alerts_updated_at 
     BEFORE UPDATE ON alerts
     FOR EACH ROW 
