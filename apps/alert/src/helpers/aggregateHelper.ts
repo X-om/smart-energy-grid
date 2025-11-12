@@ -18,9 +18,7 @@ export class AggregateHelper {
 
   static getInstance(redisService?: RedisCacheService, alertManager?: AlertManagerService): AggregateHelper {
     if (!AggregateHelper.instance) {
-      if (!redisService || !alertManager) {
-        throw new Error('RedisService and AlertManager required for first initialization');
-      }
+      if (!redisService || !alertManager) throw new Error('RedisService and AlertManager required for first initialization');
       AggregateHelper.instance = new AggregateHelper(redisService, alertManager);
     }
     return AggregateHelper.instance;

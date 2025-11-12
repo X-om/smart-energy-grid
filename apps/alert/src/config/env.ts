@@ -33,7 +33,6 @@ export interface AlertThresholds {
   readonly deduplicationMinutes: number;
 }
 
-// Helper to build PostgreSQL URL from individual env vars
 const buildPostgresUrl = (): string => {
   const host = process.env.POSTGRES_HOST || 'localhost';
   const port = process.env.POSTGRES_PORT || '5432';
@@ -44,7 +43,6 @@ const buildPostgresUrl = (): string => {
   return `postgresql://${user}:${password}@${host}:${port}/${db}`;
 };
 
-// Helper to build Redis URL from individual env vars
 const buildRedisUrl = (): string => {
   const host = process.env.REDIS_HOST || 'localhost';
   const port = process.env.REDIS_PORT || '6379';
@@ -54,9 +52,7 @@ const buildRedisUrl = (): string => {
 
 export const Config = {
   server: {
-    port: parseInt(process.env.PORT || '3004', 10),
-    nodeEnv: process.env.NODE_ENV || 'development',
-    serviceName: 'alert-service'
+    port: parseInt(process.env.PORT || '3004', 10), nodeEnv: process.env.NODE_ENV || 'development', serviceName: 'alert-service'
   } as ServerConfig,
 
   postgres: {
@@ -71,14 +67,13 @@ export const Config = {
   kafka: {
     brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
     clientId: process.env.KAFKA_CLIENT_ID || 'alert-service',
-    groupId: process.env.KAFKA_GROUP_ID || 'alert-service-group',- group',
+    groupId: process.env.KAFKA_GROUP_ID || 'alert-service-group',
     topicAggregates: process.env.KAFKA_TOPIC_REGIONAL_AGGREGATES || 'aggregates_1m_regional',
-  topicAlerts: process.env.KAFKA_TOPIC_ALERTS || 'alerts',
-  topicAlertsProcessed: process.env.KAFKA_TOPIC_ALERTS_PROCESSED || 'alerts_processed',
-  topicAlertStatusUpdates: process.env.KAFKA_TOPIC_ALERT_STATUS_UPDATES || 'alert_status_updates',
-  topicServiceHealth: 'service_health'
-} as KafkaConfig,
-
+    topicAlerts: process.env.KAFKA_TOPIC_ALERTS || 'alerts',
+    topicAlertsProcessed: process.env.KAFKA_TOPIC_ALERTS_PROCESSED || 'alerts_processed',
+    topicAlertStatusUpdates: process.env.KAFKA_TOPIC_ALERT_STATUS_UPDATES || 'alert_status_updates',
+    topicServiceHealth: process.env.KAFKA_TOPIC_SERVICE_HEALTH || 'service_health'
+  } as KafkaConfig,
   alertThresholds: {
     regionalOverloadPercent: 90,
     overloadConsecutiveWindows: 2,

@@ -4,13 +4,12 @@ export interface TelemetryReading {
   userId?: string;
   timestamp: string;
 
-  powerKw: number; // Current power consumption in kilowatts
-  energyKwh?: number; // Energy consumed in kilowatt-hours (optional, calculated)
-  voltage?: number; // Voltage measurement in volts (optional)
-  region: string; // Geographic region of the meter (e.g., 'north', 'south', 'east', 'west')
-  seq?: number; // Sequence number for ordering readings from the same meter
-  status?: 'OK' | 'ERROR'; // Status of the reading
-
+  powerKw: number;
+  energyKwh?: number;
+  voltage?: number;
+  region: string;
+  seq?: number;
+  status?: 'OK' | 'ERROR';
   metadata?: Record<string, unknown>;
 }
 

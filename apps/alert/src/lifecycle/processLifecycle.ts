@@ -65,10 +65,11 @@ export const startProcessing = async (): Promise<void> => {
   const aggregateHelper = AggregateHelper.getInstance(cache, alertManager);
   const alertHelper = AlertHelper.getInstance(alertManager);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   kafkaConsumer.setMessageHandler(async (topic: string, message: any) => {
-    if (topic === Config.kafka.topicAggregates) {  // 'aggregates_1m_regional'
+    if (topic === Config.kafka.topicAggregates) {
       await aggregateHelper.processRegionalAggregate(message);
-    } else if (topic === Config.kafka.topicAlerts) {  // 'alerts'
+    } else if (topic === Config.kafka.topicAlerts) {
       await alertHelper.processAnomalyAlert(message);
     }
   });

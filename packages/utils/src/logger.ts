@@ -1,17 +1,10 @@
-/**
- * Centralized logging utility for SEGS services.
- * Uses Pino for structured, high-performance logging.
- */
 
 import { pino } from 'pino';
 
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
-const logLevel = (process.env.LOG_LEVEL || 'info') as any;
+const logLevel = (process.env.LOG_LEVEL || 'info');
 
-/**
- * Base logger instance with common configuration.
- * All services should use createLogger() to get a child logger with component context.
- */
+
 export const logger = pino({
   level: logLevel,
   transport: isDevelopment
@@ -33,28 +26,10 @@ export const logger = pino({
   },
 });
 
-/**
- * Create a child logger with component/module context.
- * Use this in services to identify which component is logging.
- * 
- * @param component - Component or module name (e.g., 'kafka-consumer', 'aggregator')
- * @returns Child logger instance with component context
- * 
- * @example
- * ```typescript
- * import { createLogger } from '@segs/utils';
- * const logger = createLogger('my-service');
- * logger.info('Service started');
- * ```
- */
-export function createLogger(component: string): any {
+export function createLogger(component: string): pino.Logger {
   return logger.child({ component });
 }
 
-/**
- * Common specialized loggers for frequently used components.
- * Services can import these directly or create their own using createLogger().
- */
 export const kafkaLogger = createLogger('kafka');
 export const dbLogger = createLogger('database');
 export const redisLogger = createLogger('redis');

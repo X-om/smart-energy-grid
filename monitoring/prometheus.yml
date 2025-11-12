@@ -6,12 +6,10 @@ global:
     environment: 'production'
 
 scrape_configs:
-  # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # API Gateway metrics
   - job_name: 'api-gateway'
     metrics_path: '/metrics'
     static_configs:
@@ -20,7 +18,6 @@ scrape_configs:
           service: 'api-gateway'
           team: 'platform'
 
-  # Ingestion service metrics
   - job_name: 'ingestion'
     metrics_path: '/metrics'
     static_configs:

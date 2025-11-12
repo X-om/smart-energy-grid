@@ -1,12 +1,3 @@
-/**
- * Kafka message types for inter-service communication.
- * These types define the contracts for messages passed between services via Kafka topics.
- */
-
-/**
- * Regional aggregate message published by stream-processor to aggregates_1m_regional topic.
- * Consumed by alert and tariff services for regional analysis.
- */
 export interface RegionalAggregateMessage {
   region: string;
   timestamp: string;
@@ -19,10 +10,6 @@ export interface RegionalAggregateMessage {
   active_meters: string[];
 }
 
-/**
- * Per-meter aggregate message published by stream-processor to aggregates_1m topic.
- * Contains 1-minute aggregated metrics for individual meters.
- */
 export interface MeterAggregateMessage {
   meterId: string;
   region: string;
@@ -33,10 +20,6 @@ export interface MeterAggregateMessage {
   count: number;
 }
 
-/**
- * Anomaly alert message published by stream-processor to alerts topic.
- * Consumed by alert service for processing and enrichment.
- */
 export interface AnomalyAlertMessage {
   id: string;
   type: string;
@@ -48,10 +31,6 @@ export interface AnomalyAlertMessage {
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Processed alert message published by alert service to alerts_processed topic.
- * Consumed by notification service for user notifications.
- */
 export interface ProcessedAlertMessage {
   id: string;
   type: string;
@@ -70,10 +49,6 @@ export interface ProcessedAlertMessage {
   source: 'alert-service';
 }
 
-/**
- * Alert status update message published by alert service to alert_status_updates topic.
- * Consumed by notification service to broadcast status changes.
- */
 export interface AlertStatusUpdateMessage {
   alert_id: string;
   status: string;
@@ -82,10 +57,6 @@ export interface AlertStatusUpdateMessage {
   source: 'alert-service';
 }
 
-/**
- * Tariff update message published by tariff service to tariff_updates topic.
- * Consumed by notification service for price change notifications.
- */
 export interface TariffUpdateMessage {
   tariffId: string;
   region: string;
@@ -96,10 +67,6 @@ export interface TariffUpdateMessage {
   oldPrice?: number;
 }
 
-/**
- * Billing update message published by api-gateway to billing_updates topic.
- * Consumed by notification service for invoice and billing notifications.
- */
 export interface BillingUpdateMessage {
   invoice_id: string;
   user_id: number;
@@ -118,10 +85,6 @@ export interface BillingUpdateMessage {
   source: 'api-gateway';
 }
 
-/**
- * Payment update message published by api-gateway to payment_updates topic.
- * Consumed by notification service for payment confirmations.
- */
 export interface PaymentUpdateMessage {
   transaction_id: string;
   invoice_id: string;
@@ -135,10 +98,6 @@ export interface PaymentUpdateMessage {
   source: 'api-gateway';
 }
 
-/**
- * Dispute update message published by api-gateway to dispute_updates topic.
- * Consumed by notification service for dispute status notifications.
- */
 export interface DisputeUpdateMessage {
   dispute_id: string;
   invoice_id: string;
@@ -153,9 +112,6 @@ export interface DisputeUpdateMessage {
   source: 'api-gateway';
 }
 
-/**
- * Type guard to check if an object is a valid RegionalAggregateMessage
- */
 export function isRegionalAggregateMessage(obj: unknown): obj is RegionalAggregateMessage {
   const msg = obj as RegionalAggregateMessage;
   return (
@@ -169,9 +125,6 @@ export function isRegionalAggregateMessage(obj: unknown): obj is RegionalAggrega
   );
 }
 
-/**
- * Type guard to check if an object is a valid ProcessedAlertMessage
- */
 export function isProcessedAlertMessage(obj: unknown): obj is ProcessedAlertMessage {
   const msg = obj as ProcessedAlertMessage;
   return (
@@ -186,9 +139,6 @@ export function isProcessedAlertMessage(obj: unknown): obj is ProcessedAlertMess
   );
 }
 
-/**
- * Type guard to check if an object is a valid TariffUpdateMessage
- */
 export function isTariffUpdateMessage(obj: unknown): obj is TariffUpdateMessage {
   const msg = obj as TariffUpdateMessage;
   return (
@@ -201,9 +151,6 @@ export function isTariffUpdateMessage(obj: unknown): obj is TariffUpdateMessage 
   );
 }
 
-/**
- * Type guard to check if an object is a valid BillingUpdateMessage
- */
 export function isBillingUpdateMessage(obj: unknown): obj is BillingUpdateMessage {
   const msg = obj as BillingUpdateMessage;
   return (
@@ -217,9 +164,7 @@ export function isBillingUpdateMessage(obj: unknown): obj is BillingUpdateMessag
   );
 }
 
-/**
- * Type guard to check if an object is a valid PaymentUpdateMessage
- */
+
 export function isPaymentUpdateMessage(obj: unknown): obj is PaymentUpdateMessage {
   const msg = obj as PaymentUpdateMessage;
   return (
@@ -233,9 +178,7 @@ export function isPaymentUpdateMessage(obj: unknown): obj is PaymentUpdateMessag
   );
 }
 
-/**
- * Type guard to check if an object is a valid DisputeUpdateMessage
- */
+
 export function isDisputeUpdateMessage(obj: unknown): obj is DisputeUpdateMessage {
   const msg = obj as DisputeUpdateMessage;
   return (
