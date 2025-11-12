@@ -1,9 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { createLogger } from '../utils/logger.js';
-import type { TariffUpdate } from './kafkaProducerService.js';
-import type { PostgresService } from './postgresService.js';
-import type { RedisCacheService } from './redisCacheService.js';
-import type { KafkaProducerService } from './kafkaProducerService.js';
+import { createLogger } from '../utils/logger';
+import type { TariffUpdate } from './kafkaProducerService';
+import type { PostgresService } from './postgresService';
+import type { RedisCacheService } from './redisCacheService';
+import type { KafkaProducerService } from './kafkaProducerService';
 
 const logger = createLogger('override-handler');
 

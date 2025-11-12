@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { tariffClient, TariffData } from '../../services/external/tariffClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { tariffClient, TariffData } from '../../services/external/tariffClient';
 
 // * Get current tariffs for all regions
 export const getAllRegionalTariffs = asyncHandler(

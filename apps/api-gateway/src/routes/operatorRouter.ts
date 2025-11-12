@@ -1,8 +1,8 @@
 import { Router, type IRouter } from 'express';
-import { operatorOperation } from '../controllers/operator/operatorOpControllers.js';
-import { getAllUsers, getUsersByRegion } from '../controllers/operator/operatorFetchControllers.js';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { isOperatorOrAdmin } from '../middleware/auth/authorize.js';
+import { operatorOperation } from '../controllers/operator/operatorOpControllers';
+import { getAllUsers, getUsersByRegion } from '../controllers/operator/operatorFetchControllers';
+import { authenticate } from '../middleware/auth/authenticate';
+import { isOperatorOrAdmin } from '../middleware/auth/authorize';
 
 const router: IRouter = Router();
 

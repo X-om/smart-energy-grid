@@ -1,7 +1,7 @@
 import pg from 'pg';
 import { createClient, RedisClientType } from 'redis';
-import { env } from '../config/env.js';
-import { logger } from './logger.js';
+import { env } from '../config/env';
+import { logger } from './logger';
 const { Pool } = pg;
 
 export const postgresPool = new Pool({

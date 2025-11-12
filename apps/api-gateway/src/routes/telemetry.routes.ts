@@ -1,10 +1,10 @@
 import { Router, type IRouter } from 'express';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { authorize } from '../middleware/auth/authorize.js';
-import { validateQuery, validateParams } from '../utils/validators.js';
-import { getMyLatestReading, getMyMeterHistory, getMyMeterStats, getMyDailyBreakdown, getMyMonthlyBreakdown, compareMyPeriods } from '../controllers/telemetry/user.controller.js';
-import { getMeterReading, getMeterHistoryController, getRegionalStatsController, getTopConsumersController, getRealtimeLoadController } from '../controllers/telemetry/operator.controller.js';
-import { timeRangeSchema, dailyQuerySchema, monthlyQuerySchema, comparePeriodSchema, topConsumersSchema, meterIdParamSchema, regionParamSchema } from '../middleware/validation/telemetry.validation.js';
+import { authenticate } from '../middleware/auth/authenticate';
+import { authorize } from '../middleware/auth/authorize';
+import { validateQuery, validateParams } from '../utils/validators';
+import { getMyLatestReading, getMyMeterHistory, getMyMeterStats, getMyDailyBreakdown, getMyMonthlyBreakdown, compareMyPeriods } from '../controllers/telemetry/user.controller';
+import { getMeterReading, getMeterHistoryController, getRegionalStatsController, getTopConsumersController, getRealtimeLoadController } from '../controllers/telemetry/operator.controller';
+import { timeRangeSchema, dailyQuerySchema, monthlyQuerySchema, comparePeriodSchema, topConsumersSchema, meterIdParamSchema, regionParamSchema } from '../middleware/validation/telemetry.validation';
 
 const router: IRouter = Router();
 

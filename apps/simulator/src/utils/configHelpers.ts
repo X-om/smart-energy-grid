@@ -1,4 +1,4 @@
-import { logger } from "./logger.js";
+import { logger } from "./logger";
 
 export const parseArray = (value: string | undefined, defaultValue: Array<string>): Array<string> =>
   (!value) ? defaultValue : value.split(',').map(s => s.trim()).filter(Boolean);

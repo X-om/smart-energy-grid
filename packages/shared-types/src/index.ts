@@ -9,25 +9,25 @@
  */
 
 // Telemetry data models
-export * from './telemetry.js';
+export * from './telemetry';
 
 // Aggregate analytics models
-export * from './aggregates.js';
+export * from './aggregates';
 
 // Tariff pricing models
-export * from './tariff.js';
+export * from './tariff';
 
 // Alert and notification models
-export * from './alert.js';
+export * from './alert';
 
 // User and meter metadata models
-export * from './user.js';
+export * from './user';
 
 // Billing and invoice models
-export * from './billing.js';
+export * from './billing';
 
 // Common utility types and interfaces
-export * from './common.js';
+export * from './common';
 
 // Kafka message types
-export * from './kafka-messages.js';
+export * from './kafka-messages';

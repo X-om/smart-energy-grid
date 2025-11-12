@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { NotFoundError } from '../../utils/errors.js';
-import { getUserById } from '../../services/database/user.service.js';
-import { tariffClient } from '../../services/external/tariffClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { NotFoundError } from '../../utils/errors';
+import { getUserById } from '../../services/database/user.service';
+import { tariffClient } from '../../services/external/tariffClient';
 
 // * Get current tariff for the authenticated user's region
 export const getCurrentTariffForUser = asyncHandler(

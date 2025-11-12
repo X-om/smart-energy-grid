@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { getUserByEmail, updateLastLogin } from '../../services/database/user.service.js';
-import { verifyPassword } from '../../services/auth/password.service.js';
-import { generateTokenPair } from '../../services/auth/jwt.service.js';
-import { createSession } from '../../services/database/session.service.js';
-import { UnauthorizedError } from '../../utils/errors.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { getUserByEmail, updateLastLogin } from '../../services/database/user.service';
+import { verifyPassword } from '../../services/auth/password.service';
+import { generateTokenPair } from '../../services/auth/jwt.service';
+import { createSession } from '../../services/database/session.service';
+import { UnauthorizedError } from '../../utils/errors';
 
 // * POST /api/v1/auth/login
 export const loginController = asyncHandler(

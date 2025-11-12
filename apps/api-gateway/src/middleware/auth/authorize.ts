@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ForbiddenError, UnauthorizedError } from '../../utils/errors.js';
+import { ForbiddenError, UnauthorizedError } from '../../utils/errors';
 
 type Role = 'user' | 'operator' | 'admin';
 

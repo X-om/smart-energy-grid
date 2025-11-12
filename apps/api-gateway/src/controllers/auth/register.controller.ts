@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse, createdResponse } from '../../utils/response.js';
-import { createUser, getUserByEmail, verifyUserEmail } from '../../services/database/user.service.js';
-import { createOTP, verifyOTP, resendOTP } from '../../services/auth/otp.service.js';
-import { ConflictError, BadRequestError } from '../../utils/errors.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse, createdResponse } from '../../utils/response';
+import { createUser, getUserByEmail, verifyUserEmail } from '../../services/database/user.service';
+import { createOTP, verifyOTP, resendOTP } from '../../services/auth/otp.service';
+import { ConflictError, BadRequestError } from '../../utils/errors';
 
 // * POST /api/v1/auth/register
 export const registerController = asyncHandler(

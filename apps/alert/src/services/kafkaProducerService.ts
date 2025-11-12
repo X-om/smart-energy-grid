@@ -1,5 +1,5 @@
 import { Kafka, Producer, Message } from 'kafkajs';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('kafka-producer');
 

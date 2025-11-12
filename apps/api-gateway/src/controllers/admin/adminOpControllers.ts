@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { successResponse, errorResponse } from '../../utils/response.js';
-import * as userService from '../../services/database/user.service.js';
-import { ConflictError } from '../../utils/errors.js';
+import { successResponse, errorResponse } from '../../utils/response';
+import * as userService from '../../services/database/user.service';
+import { ConflictError } from '../../utils/errors';
 
 export const assignMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

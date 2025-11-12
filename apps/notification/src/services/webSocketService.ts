@@ -3,8 +3,8 @@ import { Server } from 'http';
 import { IncomingMessage } from 'http';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
-import { createLogger } from '../utils/logger.js';
-import { Config } from '../config/env.js';
+import { createLogger } from '../utils/logger';
+import { Config } from '../config/env';
 
 const logger = createLogger('websocket');
 

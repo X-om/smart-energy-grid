@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { createLogger } from '../utils/logger.js';
-import { register, dbConnectionPoolSize, updateUptime } from '../metrics/metrics.js';
-import { PostgresService } from '../services/postgresService.js';
+import { createLogger } from '../utils/logger';
+import { register, dbConnectionPoolSize, updateUptime } from '../metrics/metrics';
+import { PostgresService } from '../services/postgresService';
 
 const logger = createLogger('metrics-controller');
 

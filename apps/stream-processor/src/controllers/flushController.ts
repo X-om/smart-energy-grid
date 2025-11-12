@@ -1,9 +1,9 @@
-import { AggregatorService } from '../services/aggregator.js';
-import { TimescaleDBService } from '../db/timescale.js';
-import { KafkaProducerService } from '../kafka/producer.js';
-import { createLogger } from '../utils/logger.js';
-import { streamAggregatesWrittenTotal, streamAggregatesPublishedTotal, streamAggregationFlushDuration, dbWriteLatency } from '../metrics/metrics.js';
-import { config } from '../config/env.js';
+import { AggregatorService } from '../services/aggregator';
+import { TimescaleDBService } from '../db/timescale';
+import { KafkaProducerService } from '../kafka/producer';
+import { createLogger } from '../utils/logger';
+import { streamAggregatesWrittenTotal, streamAggregatesPublishedTotal, streamAggregationFlushDuration, dbWriteLatency } from '../metrics/metrics';
+import { config } from '../config/env';
 
 const logger = createLogger('flush-controller');
 

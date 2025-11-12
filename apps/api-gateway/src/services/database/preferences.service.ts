@@ -1,5 +1,5 @@
-import { pool } from '../../utils/db.js';
-import { NotFoundError, DatabaseError } from '../../utils/errors.js';
+import { pool } from '../../utils/db';
+import { NotFoundError, DatabaseError } from '../../utils/errors';
 
 export interface UserPreferences {
   user_id: string;

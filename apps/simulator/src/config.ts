@@ -1,6 +1,6 @@
 import { config as loadEnv } from 'dotenv';
-import { SimulatorConfig } from './types.js';
-import { validateMode, validateTarget, parseArray, parseBoolean, parseInt, parseFloat } from './utils/configHelpers.js';
+import { SimulatorConfig } from './types';
+import { validateMode, validateTarget, parseArray, parseBoolean, parseInt, parseFloat } from './utils/configHelpers';
 loadEnv();
 
 export const loadConfig = (): SimulatorConfig => {

@@ -1,5 +1,5 @@
-import { pool } from '../../utils/db.js';
-import { NotFoundError, ConflictError, DatabaseError } from '../../utils/errors.js';
+import { pool } from '../../utils/db';
+import { NotFoundError, ConflictError, DatabaseError } from '../../utils/errors';
 import { randomUUID } from 'crypto';
 
 export interface User {

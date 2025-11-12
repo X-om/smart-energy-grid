@@ -1,6 +1,6 @@
-import { pool } from '../../utils/db.js';
-import { env } from '../../config/env.js';
-import { NotFoundError } from '../../utils/errors.js';
+import { pool } from '../../utils/db';
+import { env } from '../../config/env';
+import { NotFoundError } from '../../utils/errors';
 
 export interface Session {
   session_id: string;

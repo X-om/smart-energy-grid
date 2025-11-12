@@ -1,7 +1,7 @@
 import express, { Router, Request, Response } from 'express';
-import { createOperatorController } from '../controllers/operatorController.js';
-import { OverrideHandlerService } from '../services/overrideHandlerService.js';
-import { TariffCalculatorService } from '../services/tariffCalculatorService.js';
+import { createOperatorController } from '../controllers/operatorController';
+import { OverrideHandlerService } from '../services/overrideHandlerService';
+import { TariffCalculatorService } from '../services/tariffCalculatorService';
 
 export const operatorRouter: Router = express.Router();
 let controllers: ReturnType<typeof createOperatorController> | null = null;

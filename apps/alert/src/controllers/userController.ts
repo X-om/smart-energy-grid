@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { createLogger } from '../utils/logger.js';
-import type { AlertManagerService } from '../services/alertManagerService.js';
+import { createLogger } from '../utils/logger';
+import type { AlertManagerService } from '../services/alertManagerService';
 
 const logger = createLogger('user-controller');
 

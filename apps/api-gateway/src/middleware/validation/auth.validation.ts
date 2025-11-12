@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emailSchema, passwordSchema, otpSchema } from '../../utils/validators.js';
+import { emailSchema, passwordSchema, otpSchema } from '../../utils/validators';
 
 // * Register schema
 export const registerSchema = z.object({

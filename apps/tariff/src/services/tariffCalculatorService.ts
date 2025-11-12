@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { createLogger } from '../utils/logger.js';
-import type { RegionalAggregate } from './kafkaConsumerService.js';
-import type { TariffUpdate } from './kafkaProducerService.js';
+import { createLogger } from '../utils/logger';
+import type { RegionalAggregate } from './kafkaConsumerService';
+import type { TariffUpdate } from './kafkaProducerService';
 
 const logger = createLogger('tariff-calculator');
 

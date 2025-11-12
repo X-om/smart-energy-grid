@@ -2,11 +2,10 @@
   "name": "@segs/alert",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "pnpm build && node -r dotenv/config dist/index.js",
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/ 2>/dev/null || true",
     "start": "node -r dotenv/config dist/index.js",
     "lint": "eslint src/**/*.ts",
     "test": "jest",

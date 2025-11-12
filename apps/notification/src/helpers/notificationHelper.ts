@@ -1,6 +1,6 @@
-import { WebSocketService } from '../services/webSocketService.js';
-import { ProcessedAlertMessage, AlertStatusUpdateMessage, TariffUpdateMessage } from '../services/kafkaConsumerService.js';
-import { createLogger } from '../utils/logger.js';
+import { WebSocketService } from '../services/webSocketService';
+import { ProcessedAlertMessage, AlertStatusUpdateMessage, TariffUpdateMessage } from '../services/kafkaConsumerService';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('notification-helper');
 

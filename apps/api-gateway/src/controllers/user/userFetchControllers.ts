@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '../../types/index.js';
-import * as userService from '../../services/database/user.service.js';
+import { ApiResponse } from '../../types/index';
+import * as userService from '../../services/database/user.service';
 
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

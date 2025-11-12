@@ -1,7 +1,7 @@
-import { PostgresService, Alert, CreateAlertData, UpdateAlertData, AlertFilters } from './postgresService.js';
-import { RedisCacheService } from './redisCacheService.js';
-import { KafkaProducerService, ProcessedAlertMessage } from './kafkaProducerService.js';
-import { createLogger } from '../utils/logger.js';
+import { PostgresService, Alert, CreateAlertData, UpdateAlertData, AlertFilters } from './postgresService';
+import { RedisCacheService } from './redisCacheService';
+import { KafkaProducerService, ProcessedAlertMessage } from './kafkaProducerService';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('alert-manager');
 

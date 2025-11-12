@@ -1,6 +1,6 @@
-import { AlertManagerService } from '../services/alertManagerService.js';
-import { AnomalyAlertMessage } from '../services/kafkaConsumerService.js';
-import { createLogger } from '../utils/logger.js';
+import { AlertManagerService } from '../services/alertManagerService';
+import { AnomalyAlertMessage } from '../services/kafkaConsumerService';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('alert-helper');
 

@@ -1,14 +1,14 @@
 import express, { Application } from 'express';
 import { Server } from 'http';
-import { KafkaProducerService } from './services/kafkaProducer.js';
-import { DeduplicationService } from './services/redisDedupe.js';
-import { requestAndMetricsLogger } from './middlewares/requestLogger.js';
-import { globalErrorHandler, notFoundHandler } from './middlewares/errorHandler.js';
-import { healthCheckController } from './controllers/healthController.js';
-import { ingestionMetricsController } from './controllers/metricsController.js';
-import { telemetryRouter } from './routes/telemetryRouter.js';
-import { createLogger } from './utils/logger.js';
-import { config } from './config/env.js';
+import { KafkaProducerService } from './services/kafkaProducer';
+import { DeduplicationService } from './services/redisDedupe';
+import { requestAndMetricsLogger } from './middlewares/requestLogger';
+import { globalErrorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { healthCheckController } from './controllers/healthController';
+import { ingestionMetricsController } from './controllers/metricsController';
+import { telemetryRouter } from './routes/telemetryRouter';
+import { createLogger } from './utils/logger';
+import { config } from './config/env';
 
 const logger = createLogger('main');
 

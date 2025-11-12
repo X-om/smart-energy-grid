@@ -1,6 +1,6 @@
 import { Kafka, Producer, RecordMetadata } from 'kafkajs';
-import { Reading } from '../schemas/zodSchemas.js';
-import { createLogger } from '../utils/logger.js';
+import { Reading } from '../schemas/zodSchemas';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('kafka-producer');
 

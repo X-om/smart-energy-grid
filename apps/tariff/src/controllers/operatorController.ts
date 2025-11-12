@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { createLogger } from '../utils/logger.js';
-import type { OverrideHandlerService } from '../services/overrideHandlerService.js';
-import type { TariffCalculatorService } from '../services/tariffCalculatorService.js';
+import { createLogger } from '../utils/logger';
+import type { OverrideHandlerService } from '../services/overrideHandlerService';
+import type { TariffCalculatorService } from '../services/tariffCalculatorService';
 
 const logger = createLogger('operator-controller');
 

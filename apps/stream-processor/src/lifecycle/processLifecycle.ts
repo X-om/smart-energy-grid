@@ -1,15 +1,15 @@
 import http from 'http';
-import { TimescaleDBService } from '../db/timescale.js';
-import { KafkaConsumerService } from '../kafka/consumer.js';
-import { KafkaProducerService } from '../kafka/producer.js';
-import { AggregatorService } from '../services/aggregator.js';
-import { AnomalyDetectorService } from '../services/anomalyDetector.js';
-import { handleReading } from '../helpers/processorsHelper.js';
-import { flush1mAggregates, flush15mAggregates } from '../controllers/flushController.js';
-import { startMetricsServer } from '../controllers/metricsController.js';
-import { createLogger } from '../utils/logger.js';
-import { kafkaConsumerConnected, kafkaProducerConnected, timescaledbConnected } from '../metrics/metrics.js';
-import { config } from '../config/env.js';
+import { TimescaleDBService } from '../db/timescale';
+import { KafkaConsumerService } from '../kafka/consumer';
+import { KafkaProducerService } from '../kafka/producer';
+import { AggregatorService } from '../services/aggregator';
+import { AnomalyDetectorService } from '../services/anomalyDetector';
+import { handleReading } from '../helpers/processorsHelper';
+import { flush1mAggregates, flush15mAggregates } from '../controllers/flushController';
+import { startMetricsServer } from '../controllers/metricsController';
+import { createLogger } from '../utils/logger';
+import { kafkaConsumerConnected, kafkaProducerConnected, timescaledbConnected } from '../metrics/metrics';
+import { config } from '../config/env';
 
 const logger = createLogger('lifecycle');
 

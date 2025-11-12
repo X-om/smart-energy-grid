@@ -3,8 +3,7 @@
  * Uses Pino for structured, high-performance logging.
  */
 
-import pkg from 'pino';
-const pino = pkg.default || pkg;
+import { pino } from 'pino';
 
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production';
 const logLevel = (process.env.LOG_LEVEL || 'info') as any;

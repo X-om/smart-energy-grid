@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { DeduplicationService } from '../services/redisDedupe.js';
-import { Reading } from '../schemas/zodSchemas.js';
-import { createLogger } from '../utils/logger.js';
-import { deduplicatedMessagesTotal, deduplicationCheckDuration } from '../metrics/metrics.js';
+import { DeduplicationService } from '../services/redisDedupe';
+import { Reading } from '../schemas/zodSchemas';
+import { createLogger } from '../utils/logger';
+import { deduplicatedMessagesTotal, deduplicationCheckDuration } from '../metrics/metrics';
 
 const logger = createLogger('dedupe-middleware');
 

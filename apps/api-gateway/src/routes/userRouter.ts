@@ -1,9 +1,9 @@
 import { Router, type IRouter } from 'express';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { validateRequest } from '../utils/validators.js';
-import { getProfileController, updateProfileController } from '../controllers/user/profile.controller.js';
-import { getPreferencesController, updatePreferencesController } from '../controllers/user/preferences.controller.js';
-import { updateProfileSchema, updatePreferencesSchema } from '../middleware/validation/user.validation.js';
+import { authenticate } from '../middleware/auth/authenticate';
+import { validateRequest } from '../utils/validators';
+import { getProfileController, updateProfileController } from '../controllers/user/profile.controller';
+import { getPreferencesController, updatePreferencesController } from '../controllers/user/preferences.controller';
+import { updateProfileSchema, updatePreferencesSchema } from '../middleware/validation/user.validation';
 
 const router: IRouter = Router();
 

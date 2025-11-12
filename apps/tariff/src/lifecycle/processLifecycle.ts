@@ -1,18 +1,18 @@
 import express, { Application } from 'express';
 import { Server } from 'http';
-import { createLogger } from '../utils/logger.js';
-import { config } from '../config/env.js';
-import { PostgresService } from '../services/postgresService.js';
-import { RedisCacheService } from '../services/redisCacheService.js';
-import { KafkaConsumerService } from '../services/kafkaConsumerService.js';
-import { KafkaProducerService } from '../services/kafkaProducerService.js';
-import { TariffCalculatorService } from '../services/tariffCalculatorService.js';
-import { OverrideHandlerService } from '../services/overrideHandlerService.js';
-import { handleAggregate } from '../helpers/aggregateHelper.js';
-import { healthCheckController } from '../controllers/healthController.js';
-import { tariffMetricsController } from '../controllers/metricsController.js';
-import { operatorRouter } from '../routes/operatorRouter.js';
-import { postgresConnected, redisConnected, kafkaConsumerConnected, kafkaProducerConnected, updateAllPrices } from '../metrics/metrics.js';
+import { createLogger } from '../utils/logger';
+import { config } from '../config/env';
+import { PostgresService } from '../services/postgresService';
+import { RedisCacheService } from '../services/redisCacheService';
+import { KafkaConsumerService } from '../services/kafkaConsumerService';
+import { KafkaProducerService } from '../services/kafkaProducerService';
+import { TariffCalculatorService } from '../services/tariffCalculatorService';
+import { OverrideHandlerService } from '../services/overrideHandlerService';
+import { handleAggregate } from '../helpers/aggregateHelper';
+import { healthCheckController } from '../controllers/healthController';
+import { tariffMetricsController } from '../controllers/metricsController';
+import { operatorRouter } from '../routes/operatorRouter';
+import { postgresConnected, redisConnected, kafkaConsumerConnected, kafkaProducerConnected, updateAllPrices } from '../metrics/metrics';
 
 const logger = createLogger('lifecycle');
 

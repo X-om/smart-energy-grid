@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { postgresPool, timescalePool, redisClient } from '../utils/db.js';
-import { ApiResponse } from '../types/index.js';
+import { postgresPool, timescalePool, redisClient } from '../utils/db';
+import { ApiResponse } from '../types/index';
 
 export async function healthController(_req: Request, res: Response): Promise<void> {
   let postgresStatus = 'down';

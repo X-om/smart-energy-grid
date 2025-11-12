@@ -1,5 +1,5 @@
 import { register, Counter, Gauge, Histogram } from 'prom-client';
-import { metricsLogger as logger } from '../utils/logger.js';
+import { metricsLogger as logger } from '../utils/logger';
 
 class MetricsService {
   public wsConnectionsTotal!: Gauge;

@@ -1,20 +1,20 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import authRouter from './routes/auth.routes.js';
-import userRouter from './routes/userRouter.js';
-import telemetryRouter from './routes/telemetry.routes.js';
-import tariffRouter from './routes/tariff.routes.js';
-import alertRouter from './routes/alert.routes.js';
-import adminRouter from './routes/adminRouter.js';
-import operatorRouter from './routes/operatorRouter.js';
+import authRouter from './routes/auth.routes';
+import userRouter from './routes/userRouter';
+import telemetryRouter from './routes/telemetry.routes';
+import tariffRouter from './routes/tariff.routes';
+import alertRouter from './routes/alert.routes';
+import adminRouter from './routes/adminRouter';
+import operatorRouter from './routes/operatorRouter';
 
-import { logger } from './utils/logger.js';
-import { connectDatabases, disconnectDatabases } from './utils/db.js';
-import { env } from './config/env.js';
-import { healthController } from './helpers/healthController.js';
-import { metricsController } from './helpers/metricsController.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { logger } from './utils/logger';
+import { connectDatabases, disconnectDatabases } from './utils/db';
+import { env } from './config/env';
+import { healthController } from './helpers/healthController';
+import { metricsController } from './helpers/metricsController';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 const app = express();
 

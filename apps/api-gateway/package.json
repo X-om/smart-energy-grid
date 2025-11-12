@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "API Gateway and User Service for Smart Energy Grid System",
   "private": true,
-  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",

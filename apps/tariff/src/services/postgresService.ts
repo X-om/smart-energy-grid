@@ -1,14 +1,9 @@
-import pkg from 'pg';
-const { Pool } = pkg;
-type PoolType = typeof Pool.prototype;
+import { Pool } from 'pg';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { createLogger } from '../utils/logger.js';
+import { join } from 'path';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('postgres');
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface TariffRecord {
   tariffId: string;
@@ -22,7 +17,7 @@ export interface TariffRecord {
 
 export class PostgresService {
   private static instance: PostgresService;
-  private pool: PoolType;
+  private pool: Pool;
   private connected: boolean = false;
 
   private constructor(connectionString: string) {

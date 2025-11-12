@@ -1,6 +1,6 @@
-import { initialize, startProcessing, startServer, shutdown } from './lifecycle/processLifecycle.js';
-import { createLogger } from './utils/logger.js';
-import { Config } from './config/env.js';
+import { initialize, startProcessing, startServer, shutdown } from './lifecycle/processLifecycle';
+import { createLogger } from './utils/logger';
+import { Config } from './config/env';
 
 const logger = createLogger('main');
 

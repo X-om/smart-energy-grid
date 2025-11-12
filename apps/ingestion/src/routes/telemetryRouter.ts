@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { validateSingleReading, validateBatchReadings } from '../middlewares/validationMiddleware.js';
-import { checkSingleTelemetryDuplicate, checkBatchTelemetryDuplicate } from '../middlewares/dedupeMiddleware.js';
-import { singleTelemetryReadingController, batchTelemetryReadingController } from '../controllers/telemetry/telemetryOperationalController.js';
+import { validateSingleReading, validateBatchReadings } from '../middlewares/validationMiddleware';
+import { checkSingleTelemetryDuplicate, checkBatchTelemetryDuplicate } from '../middlewares/dedupeMiddleware';
+import { singleTelemetryReadingController, batchTelemetryReadingController } from '../controllers/telemetry/telemetryOperationalController';
 
 const telemetryRouter: Router = Router();
 

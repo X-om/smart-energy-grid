@@ -1,8 +1,8 @@
 import type { TelemetryReading } from '@segs/shared-types';
-import { get1MinuteBucket, get15MinuteBucket } from '../utils/time.js';
-import { createLogger } from '../utils/logger.js';
-import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale.js';
-import { config } from '../config/env.js';
+import { get1MinuteBucket, get15MinuteBucket } from '../utils/time';
+import { createLogger } from '../utils/logger';
+import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale';
+import { config } from '../config/env';
 
 const logger = createLogger('aggregator');
 

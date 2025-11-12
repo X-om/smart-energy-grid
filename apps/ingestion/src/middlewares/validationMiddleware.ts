@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { readingSchema, batchReadingsSchema } from '../schemas/zodSchemas.js';
-import { createLogger } from '../utils/logger.js';
-import { validationErrorsTotal } from '../metrics/metrics.js';
+import { readingSchema, batchReadingsSchema } from '../schemas/zodSchemas';
+import { createLogger } from '../utils/logger';
+import { validationErrorsTotal } from '../metrics/metrics';
 
 const logger = createLogger('validation-middleware');
 

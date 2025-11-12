@@ -1,8 +1,8 @@
-import { RedisCacheService } from '../services/redisCacheService.js';
-import { AlertManagerService } from '../services/alertManagerService.js';
-import { RegionalAggregateMessage } from '../services/kafkaConsumerService.js';
-import { Config } from '../config/env.js';
-import { createLogger } from '../utils/logger.js';
+import { RedisCacheService } from '../services/redisCacheService';
+import { AlertManagerService } from '../services/alertManagerService';
+import { RegionalAggregateMessage } from '../services/kafkaConsumerService';
+import { Config } from '../config/env';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('aggregate-helper');
 

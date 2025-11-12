@@ -1,8 +1,8 @@
-import pino from 'pino';
+import { pino } from 'pino';
 
 // * Create a configured logger instance.
 export function createLogger(logLevel: string = 'info') {
-  return pino.default({
+  return pino({
     level: logLevel,
     transport: {
       target: 'pino-pretty',

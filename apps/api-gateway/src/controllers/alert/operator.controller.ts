@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { alertClient } from '../../services/external/alertClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { alertClient } from '../../services/external/alertClient';
 
 // * Get all alerts (with optional filters)
 export const getAllAlerts = asyncHandler(
@@ -87,9 +87,9 @@ export const getAlertById = asyncHandler(
 export const acknowledgeAlert = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const { alertId } = req.params;
-    const { acknowledged_by } = req.body;
+    const { operatorId, notes } = req.body;
 
-    const response = await alertClient.acknowledgeAlert(alertId, { acknowledged_by });
+    const response = await alertClient.acknowledgeAlert(alertId, { operatorId, notes });
 
     successResponse(res, 200, 'Alert acknowledged successfully', response.data.alert);
   }
@@ -99,9 +99,9 @@ export const acknowledgeAlert = asyncHandler(
 export const resolveAlert = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const { alertId } = req.params;
-    const { resolution_notes } = req.body;
+    const { operatorId, resolution, notes } = req.body;
 
-    const response = await alertClient.resolveAlert(alertId, { resolution_notes });
+    const response = await alertClient.resolveAlert(alertId, { operatorId, resolution, notes });
 
     successResponse(res, 200, 'Alert resolved successfully', response.data.alert);
   }

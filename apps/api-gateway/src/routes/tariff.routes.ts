@@ -1,11 +1,11 @@
 import { Router, type IRouter } from 'express';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { authorize } from '../middleware/auth/authorize.js';
-import { validateQuery, validateParams, validateRequest } from '../utils/validators.js';
-import { getCurrentTariffForUser, getCurrentTariffByRegion, getTariffHistory, estimateCost, forecastTariff } from '../controllers/tariff/user.controller.js';
-import { getAllRegionalTariffs, getTariffAnalytics } from '../controllers/tariff/operator.controller.js';
-import { createTariffOverride, removeTariffOverride } from '../controllers/tariff/admin.controller.js';
-import { regionParamSchema, tariffHistoryQuerySchema, estimateQuerySchema, analyticsQuerySchema, overrideBodySchema, tariffIdParamSchema } from '../middleware/validation/tariff.validation.js';
+import { authenticate } from '../middleware/auth/authenticate';
+import { authorize } from '../middleware/auth/authorize';
+import { validateQuery, validateParams, validateRequest } from '../utils/validators';
+import { getCurrentTariffForUser, getCurrentTariffByRegion, getTariffHistory, estimateCost, forecastTariff } from '../controllers/tariff/user.controller';
+import { getAllRegionalTariffs, getTariffAnalytics } from '../controllers/tariff/operator.controller';
+import { createTariffOverride, removeTariffOverride } from '../controllers/tariff/admin.controller';
+import { regionParamSchema, tariffHistoryQuerySchema, estimateQuerySchema, analyticsQuerySchema, overrideBodySchema, tariffIdParamSchema } from '../middleware/validation/tariff.validation';
 
 const router: IRouter = Router();
 

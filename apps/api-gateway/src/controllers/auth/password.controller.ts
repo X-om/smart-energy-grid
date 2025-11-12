@@ -2,13 +2,13 @@
 // * Handles password setting, changing, and reset
 
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { getUserByEmail, setUserPassword, getUserById } from '../../services/database/user.service.js';
-import { hashPassword, verifyPassword } from '../../services/auth/password.service.js';
-import { createOTP, verifyOTP } from '../../services/auth/otp.service.js';
-import { invalidateAllUserSessions } from '../../services/database/session.service.js';
-import { BadRequestError, UnauthorizedError, NotFoundError } from '../../utils/errors.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { getUserByEmail, setUserPassword, getUserById } from '../../services/database/user.service';
+import { hashPassword, verifyPassword } from '../../services/auth/password.service';
+import { createOTP, verifyOTP } from '../../services/auth/otp.service';
+import { invalidateAllUserSessions } from '../../services/database/session.service';
+import { BadRequestError, UnauthorizedError, NotFoundError } from '../../utils/errors';
 
 // * POST /api/v1/auth/set-password
 export const setPasswordController = asyncHandler(

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { BadRequestError } from '../../utils/errors.js';
-import { getLatestReading, getMeterHistory, getRegionalStats, getTopConsumers, getRealtimeRegionalLoad } from '../../services/external/timescaleClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { BadRequestError } from '../../utils/errors';
+import { getLatestReading, getMeterHistory, getRegionalStats, getTopConsumers, getRealtimeRegionalLoad } from '../../services/external/timescaleClient';
 
 // * Get specific meter reading (operator/admin)
 export const getMeterReading = asyncHandler(

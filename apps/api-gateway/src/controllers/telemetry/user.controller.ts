@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { NotFoundError, BadRequestError } from '../../utils/errors.js';
-import { getUserById } from '../../services/database/user.service.js';
-import { getLatestReading, getMeterHistory, getMeterStats, getDailyBreakdown, getMonthlyBreakdown, comparePeriods } from '../../services/external/timescaleClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { NotFoundError, BadRequestError } from '../../utils/errors';
+import { getUserById } from '../../services/database/user.service';
+import { getLatestReading, getMeterHistory, getMeterStats, getDailyBreakdown, getMonthlyBreakdown, comparePeriods } from '../../services/external/timescaleClient';
 
 // * Get current user's latest meter reading
 export const getMyLatestReading = asyncHandler(

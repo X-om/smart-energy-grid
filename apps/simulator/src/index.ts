@@ -1,8 +1,8 @@
-import { loadConfig, parseCliArgs } from './config.js';
-import { initializeMeters, generateReadings } from './generator.js';
-import { createSender } from './sender.js';
-import { logger } from './utils/logger.js';
-import { SimulatorConfig, VirtualMeter, CycleStats, CumulativeStats, } from './types.js';
+import { loadConfig, parseCliArgs } from './config';
+import { initializeMeters, generateReadings } from './generator';
+import { createSender } from './sender';
+import { logger } from './utils/logger';
+import { SimulatorConfig, VirtualMeter, CycleStats, CumulativeStats, } from './types';
 
 class TelemetrySimulator {
 

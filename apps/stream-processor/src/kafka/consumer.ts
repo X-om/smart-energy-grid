@@ -1,6 +1,6 @@
 import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
 import type { TelemetryReading } from '@segs/shared-types';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('kafka-consumer');
 

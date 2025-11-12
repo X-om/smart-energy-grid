@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { BadRequestError } from '../../utils/errors.js';
-import { tariffClient } from '../../services/external/tariffClient.js';
-import { logger } from '../../utils/logger.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { BadRequestError } from '../../utils/errors';
+import { tariffClient } from '../../services/external/tariffClient';
+import { logger } from '../../utils/logger';
 
 // * Create a manual tariff override
 export const createTariffOverride = asyncHandler(

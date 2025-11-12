@@ -1,4 +1,4 @@
-import { JWTPayload } from '../services/auth/jwt.service.js';
+import { JWTPayload } from '../services/auth/jwt.service';
 
 declare global {
   namespace Express {

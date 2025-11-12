@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { KafkaConsumerService } from '../services/kafkaConsumerService.js';
-import { WebSocketService } from '../services/webSocketService.js';
+import { KafkaConsumerService } from '../services/kafkaConsumerService';
+import { WebSocketService } from '../services/webSocketService';
 
 export const getHealth = (_req: Request, res: Response): void => {
   const kafkaConsumer = KafkaConsumerService.getInstance();

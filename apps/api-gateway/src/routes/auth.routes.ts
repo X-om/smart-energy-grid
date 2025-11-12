@@ -1,11 +1,11 @@
 import { Router, type IRouter } from 'express';
-import { registerController, verifyOTPController, resendOTPController } from '../controllers/auth/register.controller.js';
-import { loginController } from '../controllers/auth/login.controller.js';
-import { setPasswordController, changePasswordController, forgotPasswordController, resetPasswordController } from '../controllers/auth/password.controller.js';
-import { refreshTokenController, logoutController, logoutAllController } from '../controllers/auth/token.controller.js';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { validateRequest } from '../utils/validators.js';
-import { registerSchema, verifyOTPSchema, loginSchema, setPasswordSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, refreshTokenSchema, resendOTPSchema } from '../middleware/validation/auth.validation.js';
+import { registerController, verifyOTPController, resendOTPController } from '../controllers/auth/register.controller';
+import { loginController } from '../controllers/auth/login.controller';
+import { setPasswordController, changePasswordController, forgotPasswordController, resetPasswordController } from '../controllers/auth/password.controller';
+import { refreshTokenController, logoutController, logoutAllController } from '../controllers/auth/token.controller';
+import { authenticate } from '../middleware/auth/authenticate';
+import { validateRequest } from '../utils/validators';
+import { registerSchema, verifyOTPSchema, loginSchema, setPasswordSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, refreshTokenSchema, resendOTPSchema } from '../middleware/validation/auth.validation';
 
 const router: IRouter = Router();
 

@@ -1,6 +1,6 @@
 import express, { Router, Request, Response } from 'express';
-import { createOperatorController } from '../controllers/operatorController.js';
-import { AlertManagerService } from '../services/alertManagerService.js';
+import { createOperatorController } from '../controllers/operatorController';
+import { AlertManagerService } from '../services/alertManagerService';
 
 export const operatorRouter: Router = express.Router();
 let controllers: ReturnType<typeof createOperatorController> | null = null;

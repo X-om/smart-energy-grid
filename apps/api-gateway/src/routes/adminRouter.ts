@@ -1,8 +1,8 @@
 import { Router, type IRouter } from 'express';
-import { assignMeter, changeUserRole, deleteUser } from '../controllers/admin/adminOpControllers.js';
-import { getSystemStats } from '../controllers/admin/adminFetchControllers.js';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { isAdmin } from '../middleware/auth/authorize.js';
+import { assignMeter, changeUserRole, deleteUser } from '../controllers/admin/adminOpControllers';
+import { getSystemStats } from '../controllers/admin/adminFetchControllers';
+import { authenticate } from '../middleware/auth/authenticate';
+import { isAdmin } from '../middleware/auth/authorize';
 
 const router: IRouter = Router();
 

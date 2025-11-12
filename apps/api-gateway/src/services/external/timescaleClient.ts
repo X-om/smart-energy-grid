@@ -1,5 +1,5 @@
-import { timescalePool } from '../../utils/db.js';
-import { NotFoundError } from '../../utils/errors.js';
+import { timescalePool } from '../../utils/db';
+import { NotFoundError } from '../../utils/errors';
 
 interface AggregateRow {
   meter_id: string;

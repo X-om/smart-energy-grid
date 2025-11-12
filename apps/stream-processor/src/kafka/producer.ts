@@ -1,6 +1,6 @@
 import { Kafka, Producer, Partitioners } from 'kafkajs';
-import { createLogger } from '../utils/logger.js';
-import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale.js';
+import { createLogger } from '../utils/logger';
+import type { Aggregate1m, Aggregate15m, RegionalAggregate1m } from '../db/timescale';
 
 const logger = createLogger('kafka-producer');
 

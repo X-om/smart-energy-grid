@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { createLogger } from '../utils/logger.js';
-import type { Alert } from '../kafka/producer.js';
+import { createLogger } from '../utils/logger';
+import type { Alert } from '../kafka/producer';
 import type { TelemetryReading } from '@segs/shared-types';
-import type { TimescaleDBService } from '../db/timescale.js';
+import type { TimescaleDBService } from '../db/timescale';
 
 const logger = createLogger('anomaly-detector');
 

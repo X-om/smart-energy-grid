@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 
 export interface Alert {
   id: string;
@@ -89,11 +89,14 @@ export interface OperatorAlertQueryParams {
 }
 
 export interface AcknowledgeAlertRequest {
-  acknowledged_by: string;
+  operatorId: string;
+  notes?: string;
 }
 
 export interface ResolveAlertRequest {
-  resolution_notes?: string;
+  operatorId: string;
+  resolution?: string;
+  notes?: string;
 }
 
 export interface BulkResolveRequest {

@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "outDir": "./dist"
   },
   "include": [
     "src/**/*"
@@ -10,9 +9,5 @@
   "exclude": [
     "node_modules",
     "dist"
-  ],
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  }
+  ]
 }

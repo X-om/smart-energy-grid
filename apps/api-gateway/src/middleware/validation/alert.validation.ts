@@ -46,11 +46,14 @@ export const operatorAlertQuerySchema = z.object({
 
 // * Request body schemas
 export const acknowledgeAlertBodySchema = z.object({
-  acknowledged_by: z.string().min(1, 'Acknowledger name is required').max(100),
+  operatorId: z.string().min(1, 'Operator ID is required').max(100),
+  notes: z.string().max(500).optional(),
 });
 
 export const resolveAlertBodySchema = z.object({
-  resolution_notes: z.string().min(10, 'Resolution notes must be at least 10 characters').max(500).optional(),
+  operatorId: z.string().min(1, 'Operator ID is required').max(100),
+  resolution: z.string().min(10, 'Resolution must be at least 10 characters').max(500).optional(),
+  notes: z.string().max(500).optional(),
 });
 
 export const bulkResolveBodySchema = z.object({

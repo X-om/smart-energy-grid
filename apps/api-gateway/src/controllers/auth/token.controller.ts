@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { verifyToken, generateAccessToken, decodeToken, getTokenExpiry } from '../../services/auth/jwt.service.js';
-import { getSessionByRefreshToken, updateSessionAccessToken, invalidateSession, invalidateAllUserSessions } from '../../services/database/session.service.js';
-import { blacklistToken } from '../../services/database/tokenBlacklist.service.js';
-import { getUserById } from '../../services/database/user.service.js';
-import { UnauthorizedError, TokenInvalidError } from '../../utils/errors.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { verifyToken, generateAccessToken, decodeToken, getTokenExpiry } from '../../services/auth/jwt.service';
+import { getSessionByRefreshToken, updateSessionAccessToken, invalidateSession, invalidateAllUserSessions } from '../../services/database/session.service';
+import { blacklistToken } from '../../services/database/tokenBlacklist.service';
+import { getUserById } from '../../services/database/user.service';
+import { UnauthorizedError, TokenInvalidError } from '../../utils/errors';
 
 // * POST /api/v1/auth/refresh-token
 export const refreshTokenController = asyncHandler(

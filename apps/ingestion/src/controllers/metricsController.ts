@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { register, redisConnectionStatus, kafkaConnectionStatus } from '../metrics/metrics.js';
-import { DeduplicationService } from '../services/redisDedupe.js';
-import { KafkaProducerService } from '../services/kafkaProducer.js';
-import { createLogger } from '../utils/logger.js';
+import { register, redisConnectionStatus, kafkaConnectionStatus } from '../metrics/metrics';
+import { DeduplicationService } from '../services/redisDedupe';
+import { KafkaProducerService } from '../services/kafkaProducer';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('metrics-controller');
 export const ingestionMetricsController = async (_req: Request, res: Response): Promise<void> => {

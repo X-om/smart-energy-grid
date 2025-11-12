@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { getUserById, updateUser } from '../../services/database/user.service.js';
-import { NotFoundError } from '../../utils/errors.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { getUserById, updateUser } from '../../services/database/user.service';
+import { NotFoundError } from '../../utils/errors';
 
 // * GET /api/v1/user/profile
 export const getProfileController = asyncHandler(

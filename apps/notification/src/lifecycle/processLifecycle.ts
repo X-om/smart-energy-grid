@@ -1,11 +1,11 @@
 import express, { Application } from 'express';
 import { Server } from 'http';
-import { createLogger } from '../utils/logger.js';
-import { Config } from '../config/env.js';
-import { AlertStatusUpdateMessage, KafkaConsumerService, ProcessedAlertMessage, TariffUpdateMessage } from '../services/kafkaConsumerService.js';
-import { WebSocketService } from '../services/webSocketService.js';
-import { NotificationHelper } from '../helpers/notificationHelper.js';
-import { getHealth, getClients } from '../controllers/healthController.js';
+import { createLogger } from '../utils/logger';
+import { Config } from '../config/env';
+import { AlertStatusUpdateMessage, KafkaConsumerService, ProcessedAlertMessage, TariffUpdateMessage } from '../services/kafkaConsumerService';
+import { WebSocketService } from '../services/webSocketService';
+import { NotificationHelper } from '../helpers/notificationHelper';
+import { getHealth, getClients } from '../controllers/healthController';
 
 const logger = createLogger('lifecycle');
 

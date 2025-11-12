@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { getUserPreferences, updateUserPreferences, createDefaultPreferences } from '../../services/database/preferences.service.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { getUserPreferences, updateUserPreferences, createDefaultPreferences } from '../../services/database/preferences.service';
 
 // * GET /api/v1/user/notifications/settings
 export const getPreferencesController = asyncHandler(

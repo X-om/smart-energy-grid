@@ -1,11 +1,11 @@
 import http from 'http';
-import { AggregatorService } from '../services/aggregator.js';
-import { TimescaleDBService } from '../db/timescale.js';
-import { KafkaConsumerService } from '../kafka/consumer.js';
-import { KafkaProducerService } from '../kafka/producer.js';
-import { createLogger } from '../utils/logger.js';
-import { register, streamWindowBucketsGauge, streamWindowedReadingsGauge, dbConnectionPoolSize, updateUptime } from '../metrics/metrics.js';
-import { config } from '../config/env.js';
+import { AggregatorService } from '../services/aggregator';
+import { TimescaleDBService } from '../db/timescale';
+import { KafkaConsumerService } from '../kafka/consumer';
+import { KafkaProducerService } from '../kafka/producer';
+import { createLogger } from '../utils/logger';
+import { register, streamWindowBucketsGauge, streamWindowedReadingsGauge, dbConnectionPoolSize, updateUptime } from '../metrics/metrics';
+import { config } from '../config/env';
 
 const logger = createLogger('metrics-controller');
 

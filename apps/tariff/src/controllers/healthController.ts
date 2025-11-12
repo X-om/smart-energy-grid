@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { KafkaConsumerService } from '../services/kafkaConsumerService.js';
-import { KafkaProducerService } from '../services/kafkaProducerService.js';
-import { PostgresService } from '../services/postgresService.js';
-import { RedisCacheService } from '../services/redisCacheService.js';
+import { KafkaConsumerService } from '../services/kafkaConsumerService';
+import { KafkaProducerService } from '../services/kafkaProducerService';
+import { PostgresService } from '../services/postgresService';
+import { RedisCacheService } from '../services/redisCacheService';
 
 export const healthCheckController = (_req: Request, res: Response): void => {
 

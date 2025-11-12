@@ -5,7 +5,7 @@ import {
   Registry,
   collectDefaultMetrics
 } from 'prom-client';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 class MetricsService {
   private registry: Registry;

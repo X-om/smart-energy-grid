@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { paginatedResponse } from '../../utils/response.js';
-import * as userService from '../../services/database/user.service.js';
+import { paginatedResponse } from '../../utils/response';
+import * as userService from '../../services/database/user.service';
 
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

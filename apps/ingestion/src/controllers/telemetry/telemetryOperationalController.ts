@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { Reading } from '../../schemas/zodSchemas.js';
-import { KafkaProducerService } from '../../services/kafkaProducer.js';
-import { createLogger } from '../../utils/logger.js';
-import { ingestionSuccessTotal, ingestionErrorsTotal, kafkaProduceLatency, kafkaMessagesPublished, kafkaPublishErrors, batchSizeHistogram, batchProcessingDuration } from '../../metrics/metrics.js';
+import { Reading } from '../../schemas/zodSchemas';
+import { KafkaProducerService } from '../../services/kafkaProducer';
+import { createLogger } from '../../utils/logger';
+import { ingestionSuccessTotal, ingestionErrorsTotal, kafkaProduceLatency, kafkaMessagesPublished, kafkaPublishErrors, batchSizeHistogram, batchProcessingDuration } from '../../metrics/metrics';
 
 const logger = createLogger('telemetry-controller');
 

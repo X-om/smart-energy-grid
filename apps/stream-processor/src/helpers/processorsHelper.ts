@@ -1,11 +1,11 @@
 import type { TelemetryReading } from '@segs/shared-types';
-import { AggregatorService } from '../services/aggregator.js';
-import { AnomalyDetectorService } from '../services/anomalyDetector.js';
-import { KafkaProducerService } from '../kafka/producer.js';
-import { calculateLagSeconds } from '../utils/time.js';
-import { createLogger } from '../utils/logger.js';
-import { streamMessagesTotal, streamAnomaliesDetectedTotal, streamAlertsPublishedTotal, streamLagSeconds } from '../metrics/metrics.js';
-import { config } from '../config/env.js';
+import { AggregatorService } from '../services/aggregator';
+import { AnomalyDetectorService } from '../services/anomalyDetector';
+import { KafkaProducerService } from '../kafka/producer';
+import { calculateLagSeconds } from '../utils/time';
+import { createLogger } from '../utils/logger';
+import { streamMessagesTotal, streamAnomaliesDetectedTotal, streamAlertsPublishedTotal, streamLagSeconds } from '../metrics/metrics';
+import { config } from '../config/env';
 
 const logger = createLogger('processors-helper');
 

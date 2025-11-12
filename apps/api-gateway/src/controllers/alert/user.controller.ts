@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '../../utils/asyncHandler.js';
-import { successResponse } from '../../utils/response.js';
-import { NotFoundError, ForbiddenError } from '../../utils/errors.js';
-import { getUserById } from '../../services/database/user.service.js';
-import { alertClient } from '../../services/external/alertClient.js';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { successResponse } from '../../utils/response';
+import { NotFoundError, ForbiddenError } from '../../utils/errors';
+import { getUserById } from '../../services/database/user.service';
+import { alertClient } from '../../services/external/alertClient';
 
 // * Get alerts for the authenticated user's meter
 export const getUserAlerts = asyncHandler(

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createLogger } from '../utils/logger.js';
-import { ingestionErrorsTotal } from '../metrics/metrics.js';
+import { createLogger } from '../utils/logger';
+import { ingestionErrorsTotal } from '../metrics/metrics';
 
 const logger = createLogger('error-handler');
 

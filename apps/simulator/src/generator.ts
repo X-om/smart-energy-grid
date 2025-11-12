@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { TelemetryReading } from '@segs/shared-types';
-import { SimulatorConfig, VirtualMeter, SimulationMode } from './types.js';
-import { logger } from './utils/logger.js';
+import { SimulatorConfig, VirtualMeter, SimulationMode } from './types';
+import { logger } from './utils/logger';
 
 // * Generate an array of virtual meters.
 export const initializeMeters = (config: SimulatorConfig): Array<VirtualMeter> => {

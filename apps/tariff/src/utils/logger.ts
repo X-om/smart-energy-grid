@@ -1,9 +1,8 @@
 
-import pino from 'pino';
+import { pino } from 'pino';
 
 const isDev = process.env.NODE_ENV === 'development';
-const pinoLogger = (pino).default || pino;
-const logger = pinoLogger({
+const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
   transport: isDev ? {
     target: 'pino-pretty',

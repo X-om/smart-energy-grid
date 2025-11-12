@@ -1,6 +1,6 @@
 import express, { Router, Request, Response } from 'express';
-import { createUserController } from '../controllers/userController.js';
-import { AlertManagerService } from '../services/alertManagerService.js';
+import { createUserController } from '../controllers/userController';
+import { AlertManagerService } from '../services/alertManagerService';
 
 export const userRouter: Router = express.Router();
 let controllers: ReturnType<typeof createUserController> | null = null;

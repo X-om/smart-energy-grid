@@ -1,11 +1,11 @@
-import { createLogger } from '../utils/logger.js';
-import type { RegionalAggregate } from '../services/kafkaConsumerService.js';
-import { PostgresService } from '../services/postgresService.js';
-import { RedisCacheService } from '../services/redisCacheService.js';
-import { KafkaProducerService } from '../services/kafkaProducerService.js';
-import { TariffCalculatorService } from '../services/tariffCalculatorService.js';
-import { kafkaMessagesConsumed, kafkaMessagesPublished, tariffUpdatesTotal, updateCurrentPrice, tariffCalcLatency, dbOperationLatency } from '../metrics/metrics.js';
-import { config } from '../config/env.js';
+import { createLogger } from '../utils/logger';
+import type { RegionalAggregate } from '../services/kafkaConsumerService';
+import { PostgresService } from '../services/postgresService';
+import { RedisCacheService } from '../services/redisCacheService';
+import { KafkaProducerService } from '../services/kafkaProducerService';
+import { TariffCalculatorService } from '../services/tariffCalculatorService';
+import { kafkaMessagesConsumed, kafkaMessagesPublished, tariffUpdatesTotal, updateCurrentPrice, tariffCalcLatency, dbOperationLatency } from '../metrics/metrics';
+import { config } from '../config/env';
 
 const logger = createLogger('aggregate-helper');
 

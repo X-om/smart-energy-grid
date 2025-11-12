@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { env } from '../../config/env.js';
-import { TokenExpiredError, TokenInvalidError } from '../../utils/errors.js';
+import { env } from '../../config/env';
+import { TokenExpiredError, TokenInvalidError } from '../../utils/errors';
 
 export interface JWTPayload {
   userId: string;

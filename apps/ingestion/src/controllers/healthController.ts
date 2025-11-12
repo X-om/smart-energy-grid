@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { DeduplicationService } from '../services/redisDedupe.js';
-import { KafkaProducerService } from '../services/kafkaProducer.js';
+import { DeduplicationService } from '../services/redisDedupe';
+import { KafkaProducerService } from '../services/kafkaProducer';
 
 export const healthCheckController = (_req: Request, res: Response): void => {
   const dedupeService = DeduplicationService.getInstance();

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createLogger } from '../utils/logger.js';
-import { httpRequestsTotal, httpRequestDuration } from '../metrics/metrics.js';
+import { createLogger } from '../utils/logger';
+import { httpRequestsTotal, httpRequestDuration } from '../metrics/metrics';
 
 const logger = createLogger('request-logger');
 

@@ -1,17 +1,17 @@
 import express, { Application } from 'express';
 import { Server } from 'http';
-import { Config } from '../config/env.js';
-import { PostgresService } from '../services/postgresService.js';
-import { RedisCacheService } from '../services/redisCacheService.js';
-import { KafkaConsumerService } from '../services/kafkaConsumerService.js';
-import { KafkaProducerService } from '../services/kafkaProducerService.js';
-import { AlertManagerService } from '../services/alertManagerService.js';
-import { AggregateHelper } from '../helpers/aggregateHelper.js';
-import { AlertHelper } from '../helpers/alertHelper.js';
-import { getHealth, getMetrics } from '../controllers/healthController.js';
-import { operatorRouter } from '../routes/operatorRouter.js';
-import { userRouter } from '../routes/userRouter.js';
-import { createLogger } from '../utils/logger.js';
+import { Config } from '../config/env';
+import { PostgresService } from '../services/postgresService';
+import { RedisCacheService } from '../services/redisCacheService';
+import { KafkaConsumerService } from '../services/kafkaConsumerService';
+import { KafkaProducerService } from '../services/kafkaProducerService';
+import { AlertManagerService } from '../services/alertManagerService';
+import { AggregateHelper } from '../helpers/aggregateHelper';
+import { AlertHelper } from '../helpers/alertHelper';
+import { getHealth, getMetrics } from '../controllers/healthController';
+import { operatorRouter } from '../routes/operatorRouter';
+import { userRouter } from '../routes/userRouter';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('lifecycle');
 

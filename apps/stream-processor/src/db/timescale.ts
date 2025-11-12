@@ -1,13 +1,9 @@
 import { Pool } from 'pg';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { createLogger } from '../utils/logger.js';
+import { join } from 'path';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('timescaledb');
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface Aggregate1m {
   meterId: string;

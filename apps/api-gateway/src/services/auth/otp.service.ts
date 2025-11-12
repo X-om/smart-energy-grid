@@ -4,9 +4,9 @@
  */
 
 import crypto from 'crypto';
-import { env } from '../../config/env.js';
-import { pool } from '../../utils/db.js';
-import { BadRequestError, UnauthorizedError } from '../../utils/errors.js';
+import { env } from '../../config/env';
+import { pool } from '../../utils/db';
+import { BadRequestError, UnauthorizedError } from '../../utils/errors';
 
 export type OTPPurpose = 'email_verification' | 'password_reset' | 'login_2fa';
 

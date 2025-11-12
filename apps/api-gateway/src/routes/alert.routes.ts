@@ -1,29 +1,10 @@
 import { Router, type IRouter } from 'express';
-import { authenticate } from '../middleware/auth/authenticate.js';
-import { authorize } from '../middleware/auth/authorize.js';
-import { validateQuery, validateParams, validateRequest } from '../utils/validators.js';
-import { getUserAlerts, getUserAlertById } from '../controllers/alert/user.controller.js';
-import {
-  getAllAlerts,
-  getActiveAlerts,
-  getAlertHistory,
-  getAlertById,
-  acknowledgeAlert,
-  resolveAlert,
-  bulkResolveAlerts,
-  getAlertStats,
-  autoResolveOldAlerts,
-} from '../controllers/alert/operator.controller.js';
-import {
-  alertIdParamSchema,
-  userAlertQuerySchema,
-  operatorAlertQuerySchema,
-  acknowledgeAlertBodySchema,
-  resolveAlertBodySchema,
-  bulkResolveBodySchema,
-  alertStatsQuerySchema,
-  alertHistoryQuerySchema,
-} from '../middleware/validation/alert.validation.js';
+import { authenticate } from '../middleware/auth/authenticate';
+import { authorize } from '../middleware/auth/authorize';
+import { validateQuery, validateParams, validateRequest } from '../utils/validators';
+import { getUserAlerts, getUserAlertById } from '../controllers/alert/user.controller';
+import { getAllAlerts, getActiveAlerts, getAlertHistory, getAlertById, acknowledgeAlert, resolveAlert, bulkResolveAlerts, getAlertStats, autoResolveOldAlerts } from '../controllers/alert/operator.controller';
+import { alertIdParamSchema, userAlertQuerySchema, operatorAlertQuerySchema, acknowledgeAlertBodySchema, resolveAlertBodySchema, bulkResolveBodySchema, alertStatsQuerySchema, alertHistoryQuerySchema } from '../middleware/validation/alert.validation';
 
 const router: IRouter = Router();
 

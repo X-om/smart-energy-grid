@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { PostgresService } from '../services/postgresService.js';
-import { RedisCacheService } from '../services/redisCacheService.js';
-import { KafkaConsumerService } from '../services/kafkaConsumerService.js';
-import { KafkaProducerService } from '../services/kafkaProducerService.js';
-import { Config } from '../config/env.js';
+import { PostgresService } from '../services/postgresService';
+import { RedisCacheService } from '../services/redisCacheService';
+import { KafkaConsumerService } from '../services/kafkaConsumerService';
+import { KafkaProducerService } from '../services/kafkaProducerService';
+import { Config } from '../config/env';
 
 export const getHealth = async (_req: Request, res: Response): Promise<void> => {
   const postgresService = PostgresService.getInstance();

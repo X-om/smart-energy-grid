@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken, extractTokenFromHeader } from '../../services/auth/jwt.service.js';
-import { isTokenBlacklisted } from '../../services/database/tokenBlacklist.service.js';
-import { UnauthorizedError, TokenBlacklistedError } from '../../utils/errors.js';
+import { verifyToken, extractTokenFromHeader } from '../../services/auth/jwt.service';
+import { isTokenBlacklisted } from '../../services/database/tokenBlacklist.service';
+import { UnauthorizedError, TokenBlacklistedError } from '../../utils/errors';
 
 // * Authenticate middleware - verifies JWT token
 export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
