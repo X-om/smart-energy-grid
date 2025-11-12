@@ -84,7 +84,7 @@ export class KafkaProducerService {
       const messages = aggregates.map((agg) => ({
         key: agg.meterId, value: JSON.stringify({
           meterId: agg.meterId, region: agg.region, windowStart: agg.windowStart,
-          avgPowerKw: agg.avgPowerKw, maxPowerKw: agg.maxPowerKw, energyKwhSum: agg.energyKwhSum, count: agg.count
+          avgPowerKw: agg.avgPowerKw, maxPowerKw: agg.maxPowerKw, energyKwhSum: agg.energyKwhSum, readingCount: agg.readingCount
         }), headers: { type: '1m_aggregate', region: agg.region }
       }));
       await this.producer.send({ topic, messages });
@@ -105,7 +105,7 @@ export class KafkaProducerService {
       const messages = aggregates.map((agg) => ({
         key: agg.meterId, value: JSON.stringify({
           meterId: agg.meterId, region: agg.region, windowStart: agg.windowStart,
-          avgPowerKw: agg.avgPowerKw, maxPowerKw: agg.maxPowerKw, energyKwhSum: agg.energyKwhSum, count: agg.count,
+          avgPowerKw: agg.avgPowerKw, maxPowerKw: agg.maxPowerKw, energyKwhSum: agg.energyKwhSum, readingCount: agg.readingCount,
         }), headers: { type: '15m_aggregate', region: agg.region }
       }));
       await this.producer.send({ topic, messages });

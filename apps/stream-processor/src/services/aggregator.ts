@@ -15,6 +15,8 @@ interface AggregateWindow {
   energySum: number;
   voltageSum: number;
   voltageCount: number;
+  currentSum: number;
+  currentCount: number;
   count: number;
 }
 
@@ -100,6 +102,8 @@ export class AggregatorService {
         energySum: 0,
         voltageSum: 0,
         voltageCount: 0,
+        currentSum: 0,
+        currentCount: 0,
         count: 0
       });
 
@@ -114,6 +118,12 @@ export class AggregatorService {
     if (reading.voltage !== undefined && reading.voltage !== null) {
       aggregate.voltageSum += reading.voltage;
       aggregate.voltageCount += 1;
+      // Use voltage to estimate current (simplified: assuming constant voltage)
+      // Current (A) ≈ Power (W) / Voltage (V)
+      // Power is in kW, so convert: Power * 1000 / Voltage
+      const estimatedCurrent = (reading.powerKw * 1000) / reading.voltage;
+      aggregate.currentSum += estimatedCurrent;
+      aggregate.currentCount += 1;
     }
 
     aggregate.count += 1;
@@ -140,7 +150,8 @@ export class AggregatorService {
             minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
             energyKwhSum: window.energySum,
             voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
-            count: window.count,
+            currentAvg: window.currentCount > 0 ? window.currentSum / window.currentCount : 0,
+            readingCount: window.count,
           });
         }
       }
@@ -207,7 +218,8 @@ export class AggregatorService {
             minPowerKw: window.minPower === Infinity ? 0 : window.minPower,
             energyKwhSum: window.energySum,
             voltageAvg: window.voltageCount > 0 ? window.voltageSum / window.voltageCount : 0,
-            count: window.count
+            currentAvg: window.currentCount > 0 ? window.currentSum / window.currentCount : 0,
+            readingCount: window.count
           });
         }
       }

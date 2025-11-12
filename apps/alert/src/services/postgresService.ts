@@ -1,6 +1,4 @@
 import { Pool } from 'pg';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('postgres');
@@ -79,9 +77,7 @@ export class PostgresService {
       await client.query('SELECT NOW()');
       client.release();
 
-      logger.info('Connected to PostgreSQL');
-
-      await this.runMigrations();
+      logger.info('Connected to PostgreSQL - using centralized schema from init-db.sql');
     } catch (error) {
       logger.error({ error }, 'Failed to connect to PostgreSQL');
       throw error;
@@ -98,29 +94,16 @@ export class PostgresService {
     }
   }
 
-  private async runMigrations(): Promise<void> {
-    try {
-      logger.info('Running database migrations...');
-      const migrationPath = join(__dirname, '../db/migrations', '001_create_alerts.sql');
-      const schemaSQL = readFileSync(migrationPath, 'utf-8');
-      await this.pool.query(schemaSQL);
-      logger.info('Database migrations completed successfully');
-    } catch (error) {
-      logger.error({ error }, 'Migration failed');
-      throw error;
-    }
-  }
-
   async createAlert(data: CreateAlertData): Promise<Alert> {
     try {
       const query = `
-        INSERT INTO alerts (type, severity, region, meter_id, message, status, acknowledged, metadata, timestamp, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), NOW())
+        INSERT INTO alerts (alert_id, alert_type, severity, region, meter_id, message, is_resolved, acknowledged, metadata)
+        VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, false, false, $6)
         RETURNING *`;
 
       const values = [
         data.type, data.severity || 'medium', data.region,
-        data.meter_id, data.message, 'active', false,
+        data.meter_id, data.message,
         JSON.stringify(data.metadata || {})
       ];
 
@@ -134,7 +117,7 @@ export class PostgresService {
 
   async getAlert(alertId: string): Promise<Alert | null> {
     try {
-      const query = 'SELECT * FROM alerts WHERE id = $1';
+      const query = 'SELECT * FROM alerts WHERE alert_id = $1';
       const result = await this.pool.query(query, [alertId]);
 
       return result.rows.length > 0 ? this.mapRowToAlert(result.rows[0]) : null;
@@ -150,9 +133,16 @@ export class PostgresService {
       const values: unknown[] = [];
       let paramIndex = 1;
 
+      // Map status to is_resolved boolean
       if (data.status !== undefined) {
-        updates.push(`status = $${paramIndex++}`);
-        values.push(data.status);
+        if (data.status === 'resolved') {
+          updates.push(`is_resolved = $${paramIndex++}`);
+          values.push(true);
+        } else if (data.status === 'active') {
+          updates.push(`is_resolved = $${paramIndex++}`);
+          values.push(false);
+        }
+        // 'acknowledged' status is handled by the acknowledged field
       }
       if (data.acknowledged !== undefined) {
         updates.push(`acknowledged = $${paramIndex++}`);
@@ -180,7 +170,7 @@ export class PostgresService {
       updates.push(`updated_at = NOW()`);
       values.push(alertId);
 
-      const query = `UPDATE alerts SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+      const query = `UPDATE alerts SET ${updates.join(', ')} WHERE alert_id = $${paramIndex} RETURNING *`;
       const result = await this.pool.query(query, values);
 
       return result.rows.length > 0 ? this.mapRowToAlert(result.rows[0]) : null;
@@ -197,11 +187,11 @@ export class PostgresService {
       let paramIndex = 1;
 
       if (filters.status) {
-        conditions.push(`status = $${paramIndex++}`);
-        values.push(filters.status);
+        conditions.push(`is_resolved = $${paramIndex++}`);
+        values.push(filters.status === 'resolved');
       }
       if (filters.type) {
-        conditions.push(`type = $${paramIndex++}`);
+        conditions.push(`alert_type = $${paramIndex++}`);
         values.push(filters.type);
       }
       if (filters.region) {
@@ -254,10 +244,10 @@ export class PostgresService {
   async getActiveAlerts(region?: string): Promise<Alert[]> {
     try {
       const query = region
-        ? 'SELECT * FROM alerts WHERE status = $1 AND region = $2 ORDER BY created_at DESC'
-        : 'SELECT * FROM alerts WHERE status = $1 ORDER BY created_at DESC';
+        ? 'SELECT * FROM alerts WHERE is_resolved = false AND region = $1 ORDER BY created_at DESC'
+        : 'SELECT * FROM alerts WHERE is_resolved = false ORDER BY created_at DESC';
 
-      const values = region ? ['active', region] : ['active'];
+      const values = region ? [region] : [];
       const result = await this.pool.query(query, values);
 
       return result.rows.map(row => this.mapRowToAlert(row));
@@ -280,15 +270,13 @@ export class PostgresService {
       for (const alertId of alertIds) {
         const metadata = resolutionNote ? { resolution_note: resolutionNote } : {};
         const query = `
-          UPDATE alerts
-          SET status = 'resolved',
-              resolved_at = $1,
-              metadata = metadata || $2::jsonb,
-              updated_at = NOW()
-          WHERE id = $3 AND status != 'resolved'
-          RETURNING *`;
-
-        const result = await client.query(query, [
+        UPDATE alerts
+        SET is_resolved = true,
+            resolved_at = $1,
+            metadata = metadata || $2::jsonb,
+            updated_at = NOW()
+        WHERE alert_id = $3 AND is_resolved = false
+        RETURNING *`; const result = await client.query(query, [
           resolvedAt,
           JSON.stringify(metadata),
           alertId
@@ -316,10 +304,10 @@ export class PostgresService {
       const values = region ? [region] : [];
 
       const totalQuery = `SELECT COUNT(*) as total FROM alerts ${whereClause}`;
-      const activeQuery = `SELECT COUNT(*) as active FROM alerts ${whereClause} ${region ? 'AND' : 'WHERE'} status = 'active'`;
+      const activeQuery = `SELECT COUNT(*) as active FROM alerts ${whereClause} ${region ? 'AND' : 'WHERE'} is_resolved = false`;
       const acknowledgedQuery = `SELECT COUNT(*) as acknowledged FROM alerts ${whereClause} ${region ? 'AND' : 'WHERE'} acknowledged = true`;
-      const resolvedQuery = `SELECT COUNT(*) as resolved FROM alerts ${whereClause} ${region ? 'AND' : 'WHERE'} status = 'resolved'`;
-      const typeQuery = `SELECT type, COUNT(*) as count FROM alerts ${whereClause} GROUP BY type`;
+      const resolvedQuery = `SELECT COUNT(*) as resolved FROM alerts ${whereClause} ${region ? 'AND' : 'WHERE'} is_resolved = true`;
+      const typeQuery = `SELECT alert_type, COUNT(*) as count FROM alerts ${whereClause} GROUP BY alert_type`;
       const regionQuery = region ? null : 'SELECT region, COUNT(*) as count FROM alerts WHERE region IS NOT NULL GROUP BY region';
       const avgResolutionQuery = `
         SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) as avg_hours
@@ -345,7 +333,7 @@ export class PostgresService {
 
       const alertsByType: Record<string, number> = {};
       typeResult.rows.forEach(row => {
-        alertsByType[row.type] = parseInt(row.count, 10);
+        alertsByType[row.alert_type] = parseInt(row.count, 10);
       });
 
       const alertsByRegion: Record<string, number> = {};
@@ -375,11 +363,11 @@ export class PostgresService {
       const cutoffDate = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
       const query = `
         UPDATE alerts
-        SET status = 'resolved',
+        SET is_resolved = true,
             resolved_at = NOW(),
             metadata = metadata || '{"auto_resolved": true}'::jsonb,
             updated_at = NOW()
-        WHERE status = 'active'
+        WHERE is_resolved = false
           AND created_at < $1`;
 
       const result = await this.pool.query(query, [cutoffDate]);
@@ -404,14 +392,14 @@ export class PostgresService {
 
   private mapRowToAlert(row: any): Alert {
     return {
-      id: row.id,
-      type: row.type,
+      id: row.alert_id,
+      type: row.alert_type,
       severity: row.severity,
       region: row.region,
       meter_id: row.meter_id,
       message: row.message,
-      status: row.status,
-      timestamp: row.timestamp,
+      status: row.is_resolved ? 'resolved' : (row.acknowledged ? 'acknowledged' : 'active'),
+      timestamp: row.created_at,
       acknowledged: row.acknowledged,
       acknowledged_by: row.acknowledged_by,
       acknowledged_at: row.acknowledged_at,

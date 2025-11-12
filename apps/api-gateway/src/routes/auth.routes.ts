@@ -10,7 +10,7 @@ import { registerSchema, verifyOTPSchema, loginSchema, setPasswordSchema, change
 const router: IRouter = Router();
 
 router.post('/register', validateRequest(registerSchema), registerController);
-router.post('/verify-otp', validateRequest(verifyOTPSchema), verifyOTPController);
+router.post('/verify-email', validateRequest(verifyOTPSchema), verifyOTPController);
 router.post('/resend-otp', validateRequest(resendOTPSchema), resendOTPController);
 router.post('/set-password', validateRequest(setPasswordSchema), setPasswordController);
 router.post('/login', validateRequest(loginSchema), loginController);

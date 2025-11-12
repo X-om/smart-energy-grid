@@ -44,7 +44,8 @@ export const createUser = async (input: CreateUserInput): Promise<User> => {
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    const result = await pool.query(query, [userId, email, name, phone, role, region]);
+    // Convert role to uppercase to match database constraint
+    const result = await pool.query(query, [userId, email, name, phone, role.toUpperCase(), region]);
     return result.rows[0];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

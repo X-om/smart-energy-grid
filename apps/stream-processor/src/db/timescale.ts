@@ -1,6 +1,4 @@
 import { Pool } from 'pg';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('timescaledb');
@@ -14,7 +12,8 @@ export interface Aggregate1m {
   minPowerKw: number;
   energyKwhSum: number;
   voltageAvg: number;
-  count: number;
+  currentAvg: number;
+  readingCount: number;
 }
 export interface Aggregate15m extends Aggregate1m { }
 
@@ -53,7 +52,7 @@ export class TimescaleDBService {
     this.pool.on('remove', () => logger.debug('Database client removed from pool'));
   }
 
-  // * Connect and run migrations
+  // * Connect to TimescaleDB
   public async connect(): Promise<void> {
     try {
       const client = await this.pool.connect();
@@ -61,24 +60,9 @@ export class TimescaleDBService {
       client.release();
 
       this.connected = true;
-      logger.info('Connected to TimescaleDB');
-      await this.runMigrations();
+      logger.info('Connected to TimescaleDB - using centralized schema from init-timescale.sql');
     } catch (error) {
       logger.error({ error }, 'Failed to connect to TimescaleDB');
-      throw error;
-    }
-  }
-
-  // * Run database migrations
-  private async runMigrations(): Promise<void> {
-    try {
-      const migrationPath = join(__dirname, 'migrations', '001_create_aggregates.sql');
-      const migrationSQL = readFileSync(migrationPath, 'utf-8');
-
-      await this.pool.query(migrationSQL);
-      logger.info('Database migrations completed successfully');
-    } catch (error) {
-      logger.error({ error }, 'Failed to run migrations');
       throw error;
     }
   }
@@ -89,15 +73,15 @@ export class TimescaleDBService {
     try {
       const startTime = Date.now();
       const values = aggregates.map((_agg, idx) =>
-        `($${idx * 9 + 1}, $${idx * 9 + 2}, $${idx * 9 + 3}, $${idx * 9 + 4}, $${idx * 9 + 5}, $${idx * 9 + 6}, $${idx * 9 + 7}, $${idx * 9 + 8}, $${idx * 9 + 9})`
+        `($${idx * 10 + 1}, $${idx * 10 + 2}, $${idx * 10 + 3}, $${idx * 10 + 4}, $${idx * 10 + 5}, $${idx * 10 + 6}, $${idx * 10 + 7}, $${idx * 10 + 8}, $${idx * 10 + 9}, $${idx * 10 + 10})`
       ).join(', ');
 
       const params = aggregates.flatMap((agg) => [
         agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw,
-        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.count
+        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.currentAvg, agg.readingCount
       ]);
       const query = `
-        INSERT INTO aggregates_1m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, count)
+        INSERT INTO aggregates_1m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, current_avg, reading_count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
@@ -107,7 +91,8 @@ export class TimescaleDBService {
           min_power_kw = EXCLUDED.min_power_kw,
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
           voltage_avg = EXCLUDED.voltage_avg,
-          count = EXCLUDED.count
+          current_avg = EXCLUDED.current_avg,
+          reading_count = EXCLUDED.reading_count
       `;
       await this.pool.query(query, params);
       const duration = Date.now() - startTime;
@@ -126,15 +111,15 @@ export class TimescaleDBService {
     try {
       const startTime = Date.now();
       const values = aggregates.map((_agg, idx) =>
-        `($${idx * 9 + 1}, $${idx * 9 + 2}, $${idx * 9 + 3}, $${idx * 9 + 4}, $${idx * 9 + 5}, $${idx * 9 + 6}, $${idx * 9 + 7}, $${idx * 9 + 8}, $${idx * 9 + 9})`
+        `($${idx * 10 + 1}, $${idx * 10 + 2}, $${idx * 10 + 3}, $${idx * 10 + 4}, $${idx * 10 + 5}, $${idx * 10 + 6}, $${idx * 10 + 7}, $${idx * 10 + 8}, $${idx * 10 + 9}, $${idx * 10 + 10})`
       ).join(', ');
 
       const params = aggregates.flatMap((agg) => [
         agg.meterId, agg.region, agg.windowStart, agg.avgPowerKw, agg.maxPowerKw,
-        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.count
+        agg.minPowerKw, agg.energyKwhSum, agg.voltageAvg, agg.currentAvg, agg.readingCount
       ]);
       const query = `
-        INSERT INTO aggregates_15m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, count)
+        INSERT INTO aggregates_15m (meter_id, region, window_start, avg_power_kw, max_power_kw, min_power_kw, energy_kwh_sum, voltage_avg, current_avg, reading_count)
         VALUES ${values}
         ON CONFLICT (meter_id, window_start)
         DO UPDATE SET
@@ -144,7 +129,8 @@ export class TimescaleDBService {
           min_power_kw = EXCLUDED.min_power_kw,
           energy_kwh_sum = EXCLUDED.energy_kwh_sum,
           voltage_avg = EXCLUDED.voltage_avg,
-          count = EXCLUDED.count
+          current_avg = EXCLUDED.current_avg,
+          reading_count = EXCLUDED.reading_count
       `;
       await this.pool.query(query, params);
       const duration = Date.now() - startTime;
@@ -189,8 +175,11 @@ export class TimescaleDBService {
           window_start as "windowStart",
           avg_power_kw as "avgPowerKw",
           max_power_kw as "maxPowerKw",
+          min_power_kw as "minPowerKw",
           energy_kwh_sum as "energyKwhSum",
-          count
+          voltage_avg as "voltageAvg",
+          current_avg as "currentAvg",
+          reading_count as "readingCount"
          FROM aggregates_1m ${whereClause}
          ORDER BY window_start DESC`, params);
 

@@ -24,7 +24,7 @@ const generateJTI = (): string => `${Date.now()}-${Math.random().toString(36).su
 // * Generate access token
 export const generateAccessToken = (userId: string, email: string, role: string): string => {
   const jti = generateJTI();
-  const payload: JWTPayload = { userId, email, role, type: 'access', jti };
+  const payload: JWTPayload = { userId, email, role: role.toLowerCase(), type: 'access', jti };
   const options: jwt.SignOptions = { expiresIn: env.JWT_ACCESS_EXPIRY as jwt.SignOptions['expiresIn'], };
 
   return jwt.sign(payload, env.JWT_SECRET, options);
@@ -33,7 +33,7 @@ export const generateAccessToken = (userId: string, email: string, role: string)
 // * Generate refresh token
 export const generateRefreshToken = (userId: string, email: string, role: string): string => {
   const jti = generateJTI();
-  const payload: JWTPayload = { userId, email, role, type: 'refresh', jti };
+  const payload: JWTPayload = { userId, email, role: role.toLowerCase(), type: 'refresh', jti };
   const options: jwt.SignOptions = { expiresIn: env.JWT_REFRESH_EXPIRY as jwt.SignOptions['expiresIn'], };
   return jwt.sign(payload, env.JWT_SECRET, options);
 };

@@ -2,10 +2,10 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth.routes';
-import userRouter from './routes/userRouter';
 import telemetryRouter from './routes/telemetry.routes';
 import tariffRouter from './routes/tariff.routes';
 import alertRouter from './routes/alert.routes';
+import billingRouter from './routes/billing.routes';
 import adminRouter from './routes/adminRouter';
 import operatorRouter from './routes/operatorRouter';
 
@@ -15,6 +15,7 @@ import { env } from './config/env';
 import { healthController } from './helpers/healthController';
 import { metricsController } from './helpers/metricsController';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import userRouter from './routes/userRouter';
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/v1/user', userRouter);
 app.use('/api/v1/telemetry', telemetryRouter);
 app.use('/api/v1/tariff', tariffRouter);
 app.use('/api/v1/alerts', alertRouter);
+app.use('/api/v1/billing', billingRouter);
 app.use('/api/v1/operator', operatorRouter);
 app.use('/api/v1/admin', adminRouter);
 

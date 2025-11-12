@@ -54,7 +54,7 @@ class TariffClient {
   private readonly baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.TARIFF_SERVICE_URL || 'http://localhost:3003';
+    this.baseURL = process.env.TARIFF_SERVICE_URL || 'http://localhost:3005';
     this.client = axios.create({ baseURL: this.baseURL, timeout: 5000, headers: { 'Content-Type': 'application/json' } });
 
     // Request interceptor for logging

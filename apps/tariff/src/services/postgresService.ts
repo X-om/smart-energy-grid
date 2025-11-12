@@ -1,6 +1,4 @@
 import { Pool } from 'pg';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('postgres');
@@ -40,24 +38,9 @@ export class PostgresService {
 
       client.release();
       this.connected = true;
-      logger.info('Connected to PostgreSQL');
-
-      await this.runMigrations();
+      logger.info('Connected to PostgreSQL - using centralized schema from init-db.sql');
     } catch (error) {
       logger.error({ error }, 'Failed to connect to PostgreSQL');
-      throw error;
-    }
-  }
-
-  private async runMigrations(): Promise<void> {
-    try {
-      const migrationPath = join(__dirname, '../db/migrations', '001_create_tariffs.sql');
-      const migration = readFileSync(migrationPath, 'utf-8');
-
-      await this.pool.query(migration);
-      logger.info('Database migrations completed successfully');
-    } catch (error) {
-      logger.error({ error }, 'Migration failed');
       throw error;
     }
   }

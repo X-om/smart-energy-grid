@@ -30,7 +30,7 @@ const buildRedisUrl = (): string => {
 };
 
 export const config = {
-  port: parseInt(process.env.PORT || '3003', 10),
+  port: parseInt(process.env.PORT || '3005', 10),
   basePrice: parseFloat(process.env.BASE_PRICE || '5.0'),
   kafka: {
     brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),

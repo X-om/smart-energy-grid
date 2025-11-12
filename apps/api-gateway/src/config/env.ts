@@ -85,7 +85,7 @@ export const env = {
   MAX_LOGIN_ATTEMPTS: parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10),
   MASTER_OTP: process.env.MASTER_OTP || '123456',
 
-  TARIFF_SERVICE_URL: process.env.TARIFF_SERVICE_URL || 'http://localhost:3003',
+  TARIFF_SERVICE_URL: process.env.TARIFF_SERVICE_URL || 'http://localhost:3005',
   ALERT_SERVICE_URL: process.env.ALERT_SERVICE_URL || 'http://localhost:3004',
   NOTIFICATION_SERVICE_URL: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005',
 

@@ -29,7 +29,8 @@ export class AlertHelper {
         'Processing anomaly alert'
       );
 
-      if (alertData.type === 'anomaly') {
+      // Type check is case-insensitive since stream-processor sends uppercase
+      if (alertData.type.toUpperCase() === 'ANOMALY') {
         await this.alertManager.createAlert({
           type: alertData.type,
           severity: alertData.severity,

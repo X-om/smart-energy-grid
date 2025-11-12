@@ -51,7 +51,7 @@ docker compose logs --tail=50 ingestion
 # Individual service health
 curl http://localhost:3000/health  # API Gateway
 curl http://localhost:3001/health  # Ingestion
-curl http://localhost:3003/health  # Tariff
+curl http://localhost:3005/health  # Tariff
 curl http://localhost:3005/health  # Notification
 ```
 
@@ -277,7 +277,7 @@ docker compose up -d
 | API Gateway | 3000 | http://localhost:3000 |
 | Ingestion | 3001 | http://localhost:3001 |
 | Stream Processor | 3002 | http://localhost:3002 |
-| Tariff | 3003 | http://localhost:3003 |
+| Tariff | 3005 | http://localhost:3005 |
 | Alert | 3004 | http://localhost:3004 |
 | Notification | 3005 | http://localhost:3005 |
 | Grafana | 3006 | http://localhost:3006 |

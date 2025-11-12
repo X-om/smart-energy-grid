@@ -18,9 +18,11 @@ router.get('/operator/active', authenticate, authorize('operator', 'admin'), val
 router.get('/operator/history/:region', authenticate, authorize('operator', 'admin'), validateQuery(alertHistoryQuerySchema), getAlertHistory);
 router.get('/operator/stats', authenticate, authorize('operator', 'admin'), validateQuery(alertStatsQuerySchema), getAlertStats);
 router.get('/operator/:alertId', authenticate, authorize('operator', 'admin'), validateParams(alertIdParamSchema), getAlertById);
+
 router.post('/operator/:alertId/acknowledge', authenticate, authorize('operator', 'admin'), validateParams(alertIdParamSchema), validateRequest(acknowledgeAlertBodySchema), acknowledgeAlert);
 router.post('/operator/:alertId/resolve', authenticate, authorize('operator', 'admin'), validateParams(alertIdParamSchema), validateRequest(resolveAlertBodySchema), resolveAlert);
 router.post('/operator/bulk-resolve', authenticate, authorize('operator', 'admin'), validateRequest(bulkResolveBodySchema), bulkResolveAlerts);
+
 router.post('/operator/auto-resolve', authenticate, authorize('admin'), autoResolveOldAlerts);
 
 export default router;

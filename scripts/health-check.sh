@@ -55,7 +55,7 @@ echo "---------------------"
 check_service "API Gateway" "http://localhost:3000/health" "segs-api-gateway"
 check_service "Ingestion" "http://localhost:3001/health" "segs-ingestion"
 check_service "Stream Processor" "http://localhost:3002/metrics" "segs-stream-processor"
-check_service "Tariff Service" "http://localhost:3003/health" "segs-tariff"
+check_service "Tariff Service" "http://localhost:3005/health" "segs-tariff"
 check_service "Alert Service" "http://localhost:3004/metrics" "segs-alert"
 check_service "Notification" "http://localhost:3005/health" "segs-notification"
 

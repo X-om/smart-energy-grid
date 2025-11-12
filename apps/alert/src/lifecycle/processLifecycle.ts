@@ -66,9 +66,9 @@ export const startProcessing = async (): Promise<void> => {
   const alertHelper = AlertHelper.getInstance(alertManager);
 
   kafkaConsumer.setMessageHandler(async (topic: string, message: any) => {
-    if (topic === 'aggregated-data') {
+    if (topic === Config.kafka.topicAggregates) {  // 'aggregates_1m_regional'
       await aggregateHelper.processRegionalAggregate(message);
-    } else if (topic === 'anomaly-detected') {
+    } else if (topic === Config.kafka.topicAlerts) {  // 'alerts'
       await alertHelper.processAnomalyAlert(message);
     }
   });

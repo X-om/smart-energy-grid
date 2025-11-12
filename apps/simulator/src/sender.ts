@@ -44,14 +44,13 @@ export class HttpSender implements Sender {
 
   // * Send a single batch with retry logic.
   private async sendBatch(readings: Array<TelemetryReading>): Promise<BatchResponse> {
-    const batch: ReadingBatch = { readings, batchId: uuidv4(), timestamp: new Date().toISOString(), };
     const startTime = Date.now();
 
     let lastError: Error | undefined;
     for (let attempt = 0; attempt < this.config.retryAttempts; attempt++) {
       try {
 
-        await axios.post<ReadingBatch>(this.config.ingestionUrl, batch, { headers: { 'Content-Type': 'application/json', }, timeout: 30000, });
+        await axios.post(this.config.ingestionUrl, readings, { headers: { 'Content-Type': 'application/json', }, timeout: 30000, });
         const latencyMs = Date.now() - startTime;
 
         return { success: true, accepted: readings.length, rejected: 0, latencyMs, };

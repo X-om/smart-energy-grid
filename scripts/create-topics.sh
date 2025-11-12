@@ -32,7 +32,7 @@ create_topic() {
     
     echo "📝 Creating topic: $topic_name (partitions=$partitions, replication=$replication)"
     
-    docker exec "$KAFKA_CONTAINER" kafka-topics.sh \
+    docker exec "$KAFKA_CONTAINER" kafka-topics \
         --create \
         --if-not-exists \
         --topic "$topic_name" \
@@ -53,10 +53,11 @@ create_topic "aggregates_15m" 3 1
 create_topic "tariff_updates" 3 1
 create_topic "alerts" 3 1
 create_topic "alerts_processed" 3 1
+create_topic "alert_status_updates" 3 1
 
 echo ""
 echo "📋 Listing all topics:"
-docker exec "$KAFKA_CONTAINER" kafka-topics.sh \
+docker exec "$KAFKA_CONTAINER" kafka-topics \
     --list \
     --bootstrap-server localhost:9092
 

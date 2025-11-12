@@ -3,7 +3,9 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { successResponse, createdResponse } from '../../utils/response';
 import { createUser, getUserByEmail, verifyUserEmail } from '../../services/database/user.service';
 import { createOTP, verifyOTP, resendOTP } from '../../services/auth/otp.service';
+import { assignMeterToUser } from '../../services/database/meter-assignment.service';
 import { ConflictError, BadRequestError } from '../../utils/errors';
+import { logger } from '../../utils/logger';
 
 // * POST /api/v1/auth/register
 export const registerController = asyncHandler(
@@ -16,12 +18,29 @@ export const registerController = asyncHandler(
       throw new ConflictError('User with this email already exists');
 
     const user = await createUser({ name, email, phone, region, role: 'user' });
+
+    // Auto-assign meter to new user
+    let meterAssignment;
+    try {
+      meterAssignment = await assignMeterToUser(user.user_id, undefined, region);
+      logger.info({ userId: user.user_id, meterId: meterAssignment.meter_id, region: meterAssignment.region }, 'Auto-assigned meter to new user');
+    } catch (error) {
+      logger.error({ userId: user.user_id, error }, 'Failed to auto-assign meter during registration');
+    }
+
     const otp = await createOTP(email, 'email_verification');
 
     // TODO: Send OTP via email (when email service is implemented)
     // For now, we'll return it in the response (development only)
     const responseData = {
-      user: { user_id: user.user_id, email: user.email, name: user.name, email_verified: user.email_verified, },
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        name: user.name,
+        email_verified: user.email_verified,
+        meter_id: meterAssignment?.meter_id,
+        region: meterAssignment?.region || region,
+      },
       message: 'Registration successful. Please verify your email with the OTP sent.',
       ...(process.env.NODE_ENV === 'development' && { otp }), // Only in development
     };
@@ -32,7 +51,7 @@ export const registerController = asyncHandler(
 
 // * POST /api/v1/auth/verify-otp
 export const verifyOTPController = asyncHandler(
-  
+
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const { email, otp } = req.body;
 
