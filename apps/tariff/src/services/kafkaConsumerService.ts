@@ -38,13 +38,18 @@ export class KafkaConsumerService {
     this.topic = config.topic;
 
     this.kafka = new Kafka({
-      clientId: config.clientId, brokers: config.brokers,
+      clientId: config.clientId,
+      brokers: config.brokers,
+      requestTimeout: 30000,
       retry: { initialRetryTime: 300, retries: 8, multiplier: 2, maxRetryTime: 30000 },
       logLevel: this.getKafkaLogLevel(),
     });
 
     this.consumer = this.kafka.consumer({
-      groupId: config.groupId, sessionTimeout: 30000, heartbeatInterval: 3000,
+      groupId: config.groupId,
+      sessionTimeout: 30000,
+      rebalanceTimeout: 60000,
+      heartbeatInterval: 3000,
       retry: { initialRetryTime: 300, retries: 5 },
     });
 

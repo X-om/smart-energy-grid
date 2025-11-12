@@ -29,5 +29,8 @@ export * from './billing';
 // Common utility types and interfaces
 export * from './common';
 
+// Shared constants
+export * from './constants';
+
 // Kafka message types
 export * from './kafka-messages';

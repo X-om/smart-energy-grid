@@ -86,7 +86,7 @@ export class PostgresService {
       const tariffMap = new Map<string, number>();
 
       for (const row of result.rows)
-        tariffMap.set(row.region, row.pricePerKwh);
+        tariffMap.set(row.region, parseFloat(row.pricePerKwh));
 
       logger.info({ count: tariffMap.size }, 'Loaded current tariffs');
       return tariffMap;

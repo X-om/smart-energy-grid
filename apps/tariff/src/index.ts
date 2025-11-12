@@ -36,7 +36,8 @@ const main = async (): Promise<void> => {
 
     logger.info({ kafka: config.kafka, basePrice: config.basePrice, port: config.port }, '🚀 Tariff Service running');
   } catch (error) {
-    logger.error({ error }, 'Failed to start Tariff Service');
+    logger.error({ error, errorMessage: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined }, 'Failed to start Tariff Service');
+    console.error('Detailed error:', error);
     process.exit(1);
   }
 };

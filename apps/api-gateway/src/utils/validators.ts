@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z, ZodSchema } from 'zod';
 import { ValidationError } from './errors';
+import { VALID_REGIONS } from '@segs/shared-types';
 
 // * Generic request validator middleware factory
 export const validateRequest = (schema: ZodSchema) =>
@@ -63,15 +64,9 @@ export const phoneSchema = z.string()
   .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format')
   .optional();
 
-// * Region validation
-export const regionSchema = z.enum([
-  'Mumbai-North', 'Mumbai-South',
-  'Delhi-North', 'Delhi-South',
-  'Bangalore-East', 'Bangalore-West',
-  'Pune-East', 'Pune-West',
-  'Hyderabad-Central',
-  'Chennai-North'
-], {
+// * Region validation using shared constants
+const regionsList = VALID_REGIONS as readonly string[];
+export const regionSchema = z.enum(regionsList as [string, ...string[]], {
   errorMap: () => ({ message: 'Invalid region. Must be a valid city-region combination' }),
 });
 

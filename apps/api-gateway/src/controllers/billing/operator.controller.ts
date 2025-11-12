@@ -4,6 +4,7 @@ import { successResponse } from '../../utils/response';
 import { billingService } from '../../services/database/billing.service';
 import { BadRequestError } from '../../utils/errors';
 import { InvoiceStatus } from '../../types/invoice.types';
+import { VALID_REGIONS } from '@segs/shared-types';
 
 // * GET /api/v1/billing/operator/overdue/:region
 export const getOverdueInvoices = asyncHandler(
@@ -47,11 +48,7 @@ export const generateMonthlyInvoices = asyncHandler(
 
     if (region) result = await billingService.generateMonthlyInvoicesForRegion(region, year, month);
     else {
-      const regions = [
-        'Mumbai-North', 'Mumbai-South', 'Delhi-North', 'Delhi-South',
-        'Bangalore-East', 'Bangalore-West', 'Pune-East', 'Pune-West',
-        'Hyderabad-Central', 'Chennai-North'
-      ];
+      const regions = VALID_REGIONS as unknown as string[];
 
       let totalSuccess = 0;
       let totalFailed = 0;

@@ -1,6 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 import { SimulatorConfig } from './types';
 import { validateMode, validateTarget, parseArray, parseBoolean, parseInt, parseFloat } from './utils/configHelpers';
+import { DEFAULT_SIMULATOR_REGIONS } from '@segs/shared-types';
 loadEnv();
 
 export const loadConfig = (): SimulatorConfig => {
@@ -13,7 +14,7 @@ export const loadConfig = (): SimulatorConfig => {
     kafkaBrokers: parseArray(process.env.KAFKA_BROKERS, ['localhost:9092']),
     kafkaTopic: process.env.KAFKA_TOPIC || 'raw_readings',
     kafkaClientId: process.env.KAFKA_CLIENT_ID || 'segs-simulator',
-    regions: parseArray(process.env.REGIONS, ['Pune-West', 'Mumbai-North', 'Delhi-South', 'Bangalore-East']),
+    regions: parseArray(process.env.REGIONS, DEFAULT_SIMULATOR_REGIONS),
     duplicateRate: parseFloat(process.env.DUPLICATE_RATE, 0.01),
     batchSize: parseInt(process.env.BATCH_SIZE, 500),
     concurrencyLimit: parseInt(process.env.CONCURRENCY_LIMIT, 10),
