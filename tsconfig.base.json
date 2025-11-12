@@ -5,7 +5,7 @@
     "lib": [
       "ES2022"
     ],
-    "moduleResolution": "node10",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": false,
