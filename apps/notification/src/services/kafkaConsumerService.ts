@@ -49,7 +49,58 @@ export interface TariffUpdateMessage {
   oldPrice?: number;
 }
 
-export type MessageHandler = (topic: string, message: ProcessedAlertMessage | AlertStatusUpdateMessage | TariffUpdateMessage) => Promise<void>;
+// Billing update message from API gateway (billing_updates topic)
+export interface BillingUpdateMessage {
+  invoice_id: string;
+  user_id: number;
+  meter_id: string;
+  region: string;
+  billing_period: string;
+  consumption_kwh: number;
+  tariff_rate: number;
+  base_cost: number;
+  tax_amount: number;
+  total_cost: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  due_date: string;
+  generated_at: string;
+  source: 'api-gateway';
+}
+
+// Payment update message from API gateway (payment_updates topic)
+export interface PaymentUpdateMessage {
+  transaction_id: string;
+  invoice_id: string;
+  user_id: number;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  timestamp: string;
+  reference_number?: string;
+  source: 'api-gateway';
+}
+
+// Dispute update message from API gateway (dispute_updates topic)
+export interface DisputeUpdateMessage {
+  dispute_id: string;
+  invoice_id: string;
+  user_id: number;
+  status: 'open' | 'under_review' | 'resolved' | 'rejected';
+  reason: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  resolved_by?: string;
+  resolution?: string;
+  source: 'api-gateway';
+}
+
+export type MessageHandler = (
+  topic: string,
+  message: ProcessedAlertMessage | AlertStatusUpdateMessage | TariffUpdateMessage | BillingUpdateMessage | PaymentUpdateMessage | DisputeUpdateMessage
+) => Promise<void>;
 
 export class KafkaConsumerService {
   private static instance: KafkaConsumerService;

@@ -46,7 +46,7 @@ export const config = {
     url: buildRedisUrl(),
   },
   thresholds: {
-    minChangeThreshold: 0.1,
+    minChangeThreshold: parseFloat(process.env.MIN_CHANGE_THRESHOLD || '0.01'),
     criticalLoadThreshold: 90,
     highLoadThreshold: 75,
     normalLoadThreshold: 50,

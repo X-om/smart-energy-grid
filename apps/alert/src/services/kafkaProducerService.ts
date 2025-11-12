@@ -21,7 +21,7 @@ export interface ProcessedAlertMessage {
   acknowledged_by?: string;
   acknowledged_at?: string;
   resolved_at?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   processing_timestamp: string;
   source: 'alert-service';
 }

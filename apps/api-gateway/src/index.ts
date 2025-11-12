@@ -11,6 +11,7 @@ import operatorRouter from './routes/operatorRouter';
 
 import { logger } from './utils/logger';
 import { connectDatabases, disconnectDatabases } from './utils/db';
+import { connectKafka, disconnectKafka } from './services/kafka/lifecycle';
 import { env } from './config/env';
 import { healthController } from './helpers/healthController';
 import { metricsController } from './helpers/metricsController';
@@ -42,6 +43,8 @@ const startServer = async (): Promise<void> => {
     logger.info('Starting API Gateway...');
 
     await connectDatabases();
+    await connectKafka();
+
     const server = app.listen(env.PORT, () => {
       logger.info(`🚀 API Gateway started on port ${env.PORT}`);
       logger.info(`📚 Health: http://localhost:${env.PORT}/health`);
@@ -51,7 +54,11 @@ const startServer = async (): Promise<void> => {
 
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`);
-      server.close(async () => { await disconnectDatabases(); process.exit(0); });
+      server.close(async () => {
+        await disconnectKafka();
+        await disconnectDatabases();
+        process.exit(0);
+      });
     };
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));

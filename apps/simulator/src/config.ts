@@ -11,7 +11,7 @@ export const loadConfig = (): SimulatorConfig => {
     mode: validateMode(process.env.MODE || 'normal'),
     target: validateTarget(process.env.TARGET || 'http'),
     ingestionUrl: process.env.INGESTION_URL || 'http://localhost:3001/telemetry/batch',
-    kafkaBrokers: parseArray(process.env.KAFKA_BROKERS, ['localhost:9092']),
+    kafkaBrokers: parseArray(process.env.KAFKA_BROKERS, ['localhost:29092']),
     kafkaTopic: process.env.KAFKA_TOPIC || 'raw_readings',
     kafkaClientId: process.env.KAFKA_CLIENT_ID || 'segs-simulator',
     regions: parseArray(process.env.REGIONS, DEFAULT_SIMULATOR_REGIONS),

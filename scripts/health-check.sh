@@ -39,7 +39,6 @@ check_service() {
     fi
 }
 
-# Check infrastructure services
 echo "Infrastructure Services:"
 echo "------------------------"
 check_service "Kafka" "http://localhost:8080" "segs-kafka-ui"
@@ -77,7 +76,6 @@ fi
 
 echo ""
 
-# Database connectivity
 echo "Database Connectivity:"
 echo "----------------------"
 if docker exec segs-postgres pg_isready -U segs_user -d segs_db > /dev/null 2>&1; then
@@ -98,7 +96,6 @@ fi
 if docker exec segs-timescaledb pg_isready -U segs_user -d segs_db > /dev/null 2>&1; then
     echo -e "  ${GREEN}✅ TimescaleDB${NC}"
     
-    # Count time-series records
     RAW_COUNT=$(docker exec segs-timescaledb psql -U segs_user -d segs_db -t -c "SELECT COUNT(*) FROM raw_readings" 2>/dev/null | tr -d ' ')
     AGG_1M_COUNT=$(docker exec segs-timescaledb psql -U segs_user -d segs_db -t -c "SELECT COUNT(*) FROM aggregates_1m" 2>/dev/null | tr -d ' ')
     
@@ -111,8 +108,6 @@ fi
 echo ""
 echo "=========================================="
 echo ""
-
-# Summary
 echo "Quick Links:"
 echo "------------"
 echo "  📚 API Docs:      http://localhost:3000/docs"

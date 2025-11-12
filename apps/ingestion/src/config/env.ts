@@ -22,7 +22,7 @@ interface Config {
 const parseEnv = (): Config => ({
   port: parseInt(process.env.PORT || '3001', 10),
   kafka: {
-    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+    brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
     topic: process.env.KAFKA_TOPIC || 'raw_readings',
     clientId: process.env.KAFKA_CLIENT_ID || 'ingestion-service',
   },

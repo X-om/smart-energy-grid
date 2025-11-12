@@ -1,18 +1,5 @@
--- ================================================================
--- Smart Energy Grid System - PostgreSQL Database Initialization
--- ================================================================
--- This is the MASTER schema file for all PostgreSQL tables.
--- ALL services connect to this database with a unified schema.
--- DO NOT create migrations in individual services - update this file only.
--- ================================================================
-
--- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search optimization
-
--- ==========================================
--- UTILITY FUNCTIONS
--- ==========================================
 
 -- Function to update updated_at timestamp automatically
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -197,9 +184,7 @@ CREATE TRIGGER auto_create_preferences
     FOR EACH ROW
     EXECUTE FUNCTION create_default_preferences();
 
--- ==========================================
 -- METERS & DEVICES
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS meters (
     meter_id VARCHAR(50) PRIMARY KEY,
@@ -228,20 +213,18 @@ CREATE TRIGGER update_meters_updated_at
 
 COMMENT ON TABLE meters IS 'Smart meter devices installed at user locations';
 
--- ==========================================
 -- TARIFFS & PRICING
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS tariffs (
     tariff_id VARCHAR(50) PRIMARY KEY,
     region VARCHAR(100) NOT NULL,
-    time_of_day VARCHAR(20), -- 'peak', 'off-peak', 'mid-peak', or NULL for flat rate
+    time_of_day VARCHAR(20),  
     price_per_kwh DECIMAL(10, 4) NOT NULL,
     effective_from TIMESTAMPTZ NOT NULL,
     effective_to TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT true,
-    reason TEXT, -- Reason for tariff change (e.g., 'High demand', 'Seasonal adjustment')
-    triggered_by VARCHAR(100), -- 'manual', 'auto', or operator name
+    reason TEXT, 
+    triggered_by VARCHAR(100),  
     created_by VARCHAR(50),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -266,7 +249,7 @@ COMMENT ON COLUMN tariffs.time_of_day IS 'NULL for flat rate, or peak/off-peak/m
 CREATE TABLE IF NOT EXISTS tariff_rules (
     rule_id VARCHAR(50) PRIMARY KEY,
     region VARCHAR(100) NOT NULL,
-    rule_type VARCHAR(50) NOT NULL, -- 'load-based', 'time-based', 'seasonal', etc.
+    rule_type VARCHAR(50) NOT NULL, 
     conditions JSONB NOT NULL,
     base_price DECIMAL(10, 4) NOT NULL,
     multiplier DECIMAL(5, 2) DEFAULT 1.0,
@@ -289,9 +272,7 @@ CREATE TRIGGER update_tariff_rules_updated_at
 
 COMMENT ON TABLE tariff_rules IS 'Complex tariff calculation rules based on load, time, season';
 
--- ==========================================
 -- ALERTS & NOTIFICATIONS
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS alerts (
     alert_id VARCHAR(50) PRIMARY KEY,
@@ -358,7 +339,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     surcharges DECIMAL(10, 2) DEFAULT 0,
     discounts DECIMAL(10, 2) DEFAULT 0,
     total_cost DECIMAL(10, 2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'USD',
+    currency VARCHAR(10) DEFAULT 'INR',
     -- Payment Status
     status VARCHAR(20) NOT NULL DEFAULT 'pending' 
            CHECK (status IN ('pending', 'paid', 'overdue', 'disputed', 'cancelled')),
@@ -433,9 +414,7 @@ CREATE INDEX IF NOT EXISTS idx_payment_transactions_created_at ON payment_transa
 
 COMMENT ON TABLE payment_transactions IS 'Payment transaction records for invoices';
 
--- ==========================================
 -- AUDIT & LOGGING
--- ==========================================
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -456,17 +435,14 @@ CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
 
 COMMENT ON TABLE audit_logs IS 'Audit trail for all system operations and user actions';
 
--- ==========================================
+ 
 -- GRANT PERMISSIONS
--- ==========================================
 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO segs_user;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO segs_user;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO segs_user;
 
--- ==========================================
 -- SUCCESS MESSAGE
--- ==========================================
 
 DO $$
 BEGIN

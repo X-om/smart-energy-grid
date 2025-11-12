@@ -1,8 +1,4 @@
 services:
-  # ==========================================
-  # INFRASTRUCTURE SERVICES
-  # ==========================================
-  
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: segs-zookeeper
@@ -23,24 +19,23 @@ services:
     image: confluentinc/cp-kafka:7.5.0
     container_name: segs-kafka
     ports:
-      - "9092:9092"
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     depends_on:
       zookeeper:
         condition: service_healthy
     networks:
       - segs-net
     healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:29092", "--list"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -52,7 +47,7 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: segs-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
       kafka:
@@ -161,234 +156,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ==========================================
-  # APPLICATION MICROSERVICES
-  # ==========================================
-
-  ingestion:
-    build:
-      context: .
-      dockerfile: apps/ingestion/Dockerfile
-    container_name: segs-ingestion
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - KAFKA_BROKERS=kafka:9092
-      - REDIS_URL=redis://redis:6379
-      - KAFKA_TOPIC=raw_readings
-      - LOG_LEVEL=info
-    depends_on:
-      kafka:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  stream-processor:
-    build:
-      context: .
-      dockerfile: apps/stream-processor/Dockerfile
-    container_name: segs-stream-processor
-    ports:
-      - "3002:3002"
-    environment:
-      - NODE_ENV=production
-      - PORT=3002
-      - KAFKA_BROKERS=kafka:9092
-      - POSTGRES_HOST=timescaledb
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=segs_db
-      - POSTGRES_USER=segs_user
-      - POSTGRES_PASSWORD=segs_password
-      - LOG_LEVEL=info
-    depends_on:
-      kafka:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/metrics"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  tariff:
-    build:
-      context: .
-      dockerfile: apps/tariff/Dockerfile
-    container_name: segs-tariff
-    ports:
-      - "3003:3003"
-    environment:
-      - NODE_ENV=production
-      - PORT=3003
-      - KAFKA_BROKERS=kafka:9092
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=segs_db
-      - POSTGRES_USER=segs_user
-      - POSTGRES_PASSWORD=segs_password
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - LOG_LEVEL=info
-    depends_on:
-      kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3003/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  alert:
-    build:
-      context: .
-      dockerfile: apps/alert/Dockerfile
-    container_name: segs-alert
-    ports:
-      - "3004:3004"
-    environment:
-      - NODE_ENV=production
-      - PORT=3004
-      - KAFKA_BROKERS=kafka:9092
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=segs_db
-      - POSTGRES_USER=segs_user
-      - POSTGRES_PASSWORD=segs_password
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - LOG_LEVEL=info
-    depends_on:
-      kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3004/metrics"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  notification:
-    build:
-      context: .
-      dockerfile: apps/notification/Dockerfile
-    container_name: segs-notification
-    ports:
-      - "3005:3005"
-    environment:
-      - NODE_ENV=production
-      - PORT=3005
-      - KAFKA_BROKERS=kafka:9092
-      - JWT_SECRET=mysecretkey
-      - LOG_LEVEL=info
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  api-gateway:
-    build:
-      context: .
-      dockerfile: apps/api-gateway/Dockerfile
-    container_name: segs-api-gateway
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - JWT_SECRET=mysecretkey
-      - JWT_EXPIRES_IN=1d
-      - POSTGRES_URL=postgresql://segs_user:segs_password@postgres:5432/segs_db
-      - TIMESCALE_URL=postgresql://segs_user:segs_password@timescaledb:5432/segs_db
-      - REDIS_URL=redis://redis:6379
-      - TARIFF_SERVICE_URL=http://tariff:3003
-      - ALERT_SERVICE_URL=http://alert:3004
-      - NOTIFICATION_SERVICE_URL=http://notification:3005
-      - LOG_LEVEL=info
-      - RATE_LIMIT_WINDOW_MS=900000
-      - RATE_LIMIT_MAX_REQUESTS=100
-      - CORS_ORIGIN=*
-    depends_on:
-      postgres:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      tariff:
-        condition: service_healthy
-    networks:
-      - segs-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
-
-  simulator:
-    build:
-      context: .
-      dockerfile: apps/simulator/Dockerfile
-    container_name: segs-simulator
-    environment:
-      - NODE_ENV=production
-      - INGESTION_URL=http://ingestion:3001
-      - NUM_METERS=100
-      - INTERVAL_MS=5000
-      - BATCH_SIZE=50
-    depends_on:
-      ingestion:
-        condition: service_healthy
-    networks:
-      - segs-net
-    restart: unless-stopped
-    profiles:
-      - simulator
-
-# ==========================================
-# NETWORKS & VOLUMES
-# ==========================================
 
 networks:
   segs-net:

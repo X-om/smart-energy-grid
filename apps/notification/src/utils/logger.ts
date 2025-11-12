@@ -14,6 +14,9 @@ export const logger = pino({
   base: {
     service: process.env.SERVICE_NAME || 'notification-service',
     version: process.env.SERVICE_VERSION || '1.0.0'
+  },
+  serializers: {
+    error: pino.stdSerializers.err
   }
 });
 

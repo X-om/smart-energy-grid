@@ -2,7 +2,7 @@ import express, { Application } from 'express';
 import { Server } from 'http';
 import { createLogger } from '../utils/logger';
 import { Config } from '../config/env';
-import { AlertStatusUpdateMessage, KafkaConsumerService, ProcessedAlertMessage, TariffUpdateMessage } from '../services/kafkaConsumerService';
+import { AlertStatusUpdateMessage, BillingUpdateMessage, DisputeUpdateMessage, KafkaConsumerService, PaymentUpdateMessage, ProcessedAlertMessage, TariffUpdateMessage } from '../services/kafkaConsumerService';
 import { WebSocketService } from '../services/webSocketService';
 import { NotificationHelper } from '../helpers/notificationHelper';
 import { getHealth, getClients } from '../controllers/healthController';
@@ -17,7 +17,12 @@ export const initialize = async (): Promise<void> => {
   const kafkaConsumer = KafkaConsumerService.getInstance({
     brokers: Config.kafka.brokers, clientId: Config.kafka.clientId,
     groupId: Config.kafka.groupId, topics: [
-      Config.kafka.topicAlertsProcessed, Config.kafka.topicAlertStatusUpdates, Config.kafka.topicTariffUpdates
+      Config.kafka.topicAlertsProcessed,
+      Config.kafka.topicAlertStatusUpdates,
+      Config.kafka.topicTariffUpdates,
+      Config.kafka.topicBillingUpdates,
+      Config.kafka.topicPaymentUpdates,
+      Config.kafka.topicDisputeUpdates
     ]
   });
   await kafkaConsumer.connect();
@@ -41,6 +46,15 @@ export const startProcessing = async (): Promise<void> => {
 
     else if (topic === Config.kafka.topicTariffUpdates)
       await notificationHelper.handleTariffUpdate(message as TariffUpdateMessage);
+
+    else if (topic === Config.kafka.topicBillingUpdates)
+      await notificationHelper.handleBillingUpdate(message as BillingUpdateMessage);
+
+    else if (topic === Config.kafka.topicPaymentUpdates)
+      await notificationHelper.handlePaymentUpdate(message as PaymentUpdateMessage);
+
+    else if (topic === Config.kafka.topicDisputeUpdates)
+      await notificationHelper.handleDisputeUpdate(message as DisputeUpdateMessage);
   });
 
   await kafkaConsumer.startConsuming();

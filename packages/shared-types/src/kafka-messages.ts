@@ -45,7 +45,7 @@ export interface AnomalyAlertMessage {
   meter_id?: string;
   message: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -65,7 +65,7 @@ export interface ProcessedAlertMessage {
   acknowledged_by?: string;
   acknowledged_at?: string;
   resolved_at?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   processing_timestamp: string;
   source: 'alert-service';
 }
@@ -94,6 +94,63 @@ export interface TariffUpdateMessage {
   reason?: string;
   triggeredBy: string;
   oldPrice?: number;
+}
+
+/**
+ * Billing update message published by api-gateway to billing_updates topic.
+ * Consumed by notification service for invoice and billing notifications.
+ */
+export interface BillingUpdateMessage {
+  invoice_id: string;
+  user_id: number;
+  meter_id: string;
+  region: string;
+  billing_period: string;
+  consumption_kwh: number;
+  tariff_rate: number;
+  base_cost: number;
+  tax_amount: number;
+  total_cost: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  due_date: string;
+  generated_at: string;
+  source: 'api-gateway';
+}
+
+/**
+ * Payment update message published by api-gateway to payment_updates topic.
+ * Consumed by notification service for payment confirmations.
+ */
+export interface PaymentUpdateMessage {
+  transaction_id: string;
+  invoice_id: string;
+  user_id: number;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  timestamp: string;
+  reference_number?: string;
+  source: 'api-gateway';
+}
+
+/**
+ * Dispute update message published by api-gateway to dispute_updates topic.
+ * Consumed by notification service for dispute status notifications.
+ */
+export interface DisputeUpdateMessage {
+  dispute_id: string;
+  invoice_id: string;
+  user_id: number;
+  status: 'open' | 'under_review' | 'resolved' | 'rejected';
+  reason: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  resolved_by?: string;
+  resolution?: string;
+  source: 'api-gateway';
 }
 
 /**
@@ -141,5 +198,53 @@ export function isTariffUpdateMessage(obj: unknown): obj is TariffUpdateMessage 
     typeof msg.region === 'string' &&
     typeof msg.pricePerKwh === 'number' &&
     typeof msg.effectiveFrom === 'string'
+  );
+}
+
+/**
+ * Type guard to check if an object is a valid BillingUpdateMessage
+ */
+export function isBillingUpdateMessage(obj: unknown): obj is BillingUpdateMessage {
+  const msg = obj as BillingUpdateMessage;
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    typeof msg.invoice_id === 'string' &&
+    typeof msg.user_id === 'number' &&
+    typeof msg.meter_id === 'string' &&
+    typeof msg.consumption_kwh === 'number' &&
+    msg.source === 'api-gateway'
+  );
+}
+
+/**
+ * Type guard to check if an object is a valid PaymentUpdateMessage
+ */
+export function isPaymentUpdateMessage(obj: unknown): obj is PaymentUpdateMessage {
+  const msg = obj as PaymentUpdateMessage;
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    typeof msg.transaction_id === 'string' &&
+    typeof msg.invoice_id === 'string' &&
+    typeof msg.user_id === 'number' &&
+    typeof msg.amount === 'number' &&
+    msg.source === 'api-gateway'
+  );
+}
+
+/**
+ * Type guard to check if an object is a valid DisputeUpdateMessage
+ */
+export function isDisputeUpdateMessage(obj: unknown): obj is DisputeUpdateMessage {
+  const msg = obj as DisputeUpdateMessage;
+  return (
+    typeof msg === 'object' &&
+    msg !== null &&
+    typeof msg.dispute_id === 'string' &&
+    typeof msg.invoice_id === 'string' &&
+    typeof msg.user_id === 'number' &&
+    typeof msg.status === 'string' &&
+    msg.source === 'api-gateway'
   );
 }

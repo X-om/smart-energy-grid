@@ -152,7 +152,7 @@ export class TimescaleDBService {
         WHERE meter_id = $1 
         ORDER BY window_start DESC LIMIT 1`, [meterId]);
 
-      return result.rows.length > 0 ? result.rows[0].avg_power_kw : null;
+      return result.rows.length > 0 ? parseFloat(result.rows[0].avg_power_kw) : null;
     } catch (error) {
       logger.error({ error, meterId }, 'Failed to get last avg power');
       return null;

@@ -12,6 +12,9 @@ const logger = pino({
       ignore: 'pid,hostname'
     }
   } : undefined,
+  serializers: {
+    error: pino.stdSerializers.err
+  }
 });
 
 export const createLogger = (context: string) => logger.child({ context });

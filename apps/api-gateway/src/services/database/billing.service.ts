@@ -1,7 +1,11 @@
 import { Pool } from 'pg';
 import { postgresPool } from '../../utils/db.js';
+import { getKafkaProducer } from '../kafka/lifecycle.js';
+import { env } from '../../config/env.js';
+import { BillingUpdateMessage, PaymentUpdateMessage, DisputeUpdateMessage } from '@segs/shared-types';
 import { NotFoundError } from '../../utils/errors.js';
 import { Invoice, InvoiceWithLineItems, InvoiceSummary, OverdueInvoice, InvoiceAnalytics, PaymentHistoryRecord, InvoiceStatus, MarkInvoicePaidRequest, DisputeInvoiceRequest } from '../../types/invoice.types.js';
+import { logger } from '../../utils/logger.js';
 
 export class BillingService {
   private pool: Pool;
@@ -126,15 +130,39 @@ export class BillingService {
       `;
 
       const updateResult = await client.query(updateQuery, [data.paid_at || null, data.payment_method, data.payment_reference || null, data.notes || null, invoiceId]);
-      const transactionQuery = `INSERT INTO payment_transactions (invoice_id, user_id, amount, payment_method, status, metadata) VALUES ($1, $2, $3, $4, 'completed', $5)`;
+      const transactionQuery = `INSERT INTO payment_transactions (invoice_id, user_id, amount, payment_method, status, metadata) VALUES ($1, $2, $3, $4, 'completed', $5) RETURNING transaction_id`;
 
-      await client.query(transactionQuery, [
+      const transactionResult = await client.query(transactionQuery, [
         invoiceId, userId,
         invoice.total_cost, data.payment_method, JSON.stringify({ payment_reference: data.payment_reference })
       ]);
 
+      const updatedInvoice = updateResult.rows[0];
       await client.query('COMMIT');
-      return updateResult.rows[0];
+
+      // Publish payment update to Kafka
+      try {
+        const kafkaProducer = getKafkaProducer();
+        const paymentMessage: PaymentUpdateMessage = {
+          transaction_id: transactionResult.rows[0].transaction_id,
+          invoice_id: invoiceId,
+          user_id: parseInt(userId),
+          amount: invoice.total_cost,
+          currency: 'INR',
+          payment_method: data.payment_method,
+          status: 'completed',
+          timestamp: new Date().toISOString(),
+          reference_number: data.payment_reference,
+          source: 'api-gateway'
+        };
+
+        await kafkaProducer.publishPaymentUpdate(env.KAFKA_TOPICS.PAYMENT_UPDATES, paymentMessage);
+        logger.info({ transactionId: transactionResult.rows[0].transaction_id, invoiceId }, 'Published payment update to Kafka');
+      } catch (kafkaError) {
+        logger.error({ error: kafkaError, invoiceId }, 'Failed to publish payment update to Kafka');
+      }
+
+      return updatedInvoice;
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -142,21 +170,53 @@ export class BillingService {
   }
 
   async disputeInvoice(invoiceId: string, userId: string, data: DisputeInvoiceRequest): Promise<Invoice> {
-    const updateQuery = `
-      UPDATE invoices
-      SET 
-        status = 'disputed',
-        is_disputed = true,
-        disputed_at = NOW(),
-        dispute_reason = $1,
-        updated_at = NOW()
-      WHERE invoice_id = $2 AND user_id = $3 AND status != 'paid'
-      RETURNING *
-    `;
-    const result = await this.pool.query(updateQuery, [data.dispute_reason, invoiceId, userId]);
-    if (result.rows.length === 0) throw new NotFoundError('Invoice not found or cannot be disputed');
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    return result.rows[0];
+      const updateQuery = `
+        UPDATE invoices
+        SET 
+          status = 'disputed',
+          is_disputed = true,
+          disputed_at = NOW(),
+          dispute_reason = $1,
+          updated_at = NOW()
+        WHERE invoice_id = $2 AND user_id = $3 AND status != 'paid'
+        RETURNING *
+      `;
+      const result = await this.pool.query(updateQuery, [data.dispute_reason, invoiceId, userId]);
+      if (result.rows.length === 0) throw new NotFoundError('Invoice not found or cannot be disputed');
+
+      const invoice = result.rows[0];
+      await client.query('COMMIT');
+
+      // Publish dispute update to Kafka
+      try {
+        const kafkaProducer = getKafkaProducer();
+        const disputeMessage: DisputeUpdateMessage = {
+          dispute_id: `DSP-${Date.now()}-${invoiceId}`,
+          invoice_id: invoiceId,
+          user_id: parseInt(userId),
+          status: 'open',
+          reason: data.dispute_reason,
+          description: data.dispute_reason, // Use reason as description since type doesn't have separate field
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          source: 'api-gateway'
+        };
+
+        await kafkaProducer.publishDisputeUpdate(env.KAFKA_TOPICS.DISPUTE_UPDATES, disputeMessage);
+        logger.info({ disputeId: disputeMessage.dispute_id, invoiceId }, 'Published dispute update to Kafka');
+      } catch (kafkaError) {
+        logger.error({ error: kafkaError, invoiceId }, 'Failed to publish dispute update to Kafka');
+      }
+
+      return invoice;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
   }
 
   async getCurrentBillingCycle(userId: string, meterId: string): Promise<{ cycle_start: Date; cycle_end: Date; days_remaining: number; current_month_invoice: Invoice | null; }> {
@@ -252,7 +312,7 @@ export class BillingService {
         SUM(CASE WHEN status IN ('pending', 'overdue') THEN total_cost ELSE 0 END) as outstanding_revenue,
         AVG(total_cost) as average_bill_amount,
         SUM(total_consumption_kwh) as total_consumption_kwh,
-        COALESCE(MAX(currency), 'USD') as currency
+        COALESCE(MAX(currency), 'INR') as currency
       FROM invoices
       ${whereClause}
     `;
@@ -280,10 +340,32 @@ export class BillingService {
 
       if (existingResult.rows.length > 0) throw new Error('Invoice already exists for this period');
 
-      const totalConsumption = 100;
-      const avgRate = 6.5;
+      // Calculate actual consumption from TimescaleDB aggregates
+      const { timescalePool } = await import('../../utils/db.js');
+      const consumptionQuery = `
+        SELECT COALESCE(SUM(avg_power_kw * (1.0/60.0)), 0) as total_consumption
+        FROM aggregates_1m
+        WHERE meter_id = $1 
+          AND window_start >= $2 
+          AND window_start <= $3
+      `;
+      const consumptionResult = await timescalePool.query(consumptionQuery, [meterId, periodStart, periodEnd]);
+      const totalConsumption = parseFloat(consumptionResult.rows[0]?.total_consumption || '0');
+
+      // Fetch actual average tariff rate from database
+      const tariffQuery = `
+        SELECT AVG(price_per_kwh) as avg_rate
+        FROM tariffs
+        WHERE region = $1 
+          AND is_active = true
+          AND effective_from >= $2
+          AND effective_from <= $3
+      `;
+      const tariffResult = await client.query(tariffQuery, [region, periodStart, periodEnd]);
+      const avgRate = parseFloat(tariffResult.rows[0]?.avg_rate || '6.5');
+
       const baseCost = totalConsumption * avgRate;
-      const taxAmount = baseCost * 0.1;
+      const taxAmount = baseCost * 0.18; // 18% GST for India
       const totalCost = baseCost + taxAmount;
 
       const invoiceNumberResult = await client.query('SELECT generate_invoice_number() as number');
@@ -302,10 +384,41 @@ export class BillingService {
 
       const invoiceResult = await client.query(insertQuery, [
         invoiceNumber, userId, meterId, region, periodStart, periodEnd,
-        totalConsumption, avgRate, baseCost, taxAmount, totalCost, 'USD', 'pending', dueDate
+        totalConsumption, avgRate, baseCost, taxAmount, totalCost, 'INR', 'pending', dueDate
       ]);
+
+      const invoice = invoiceResult.rows[0];
       await client.query('COMMIT');
-      return invoiceResult.rows[0];
+
+      // Publish billing update to Kafka
+      try {
+        const kafkaProducer = getKafkaProducer();
+        const billingMessage: BillingUpdateMessage = {
+          invoice_id: invoice.invoice_id,
+          user_id: parseInt(userId),
+          meter_id: meterId,
+          region,
+          billing_period: `${year}-${String(month).padStart(2, '0')}`,
+          consumption_kwh: totalConsumption,
+          tariff_rate: avgRate,
+          base_cost: baseCost,
+          tax_amount: taxAmount,
+          total_cost: totalCost,
+          currency: 'INR',
+          status: 'pending',
+          due_date: dueDate.toISOString(),
+          generated_at: new Date().toISOString(),
+          source: 'api-gateway'
+        };
+
+        await kafkaProducer.publishBillingUpdate(env.KAFKA_TOPICS.BILLING_UPDATES, billingMessage);
+        logger.info({ invoiceId: invoice.invoice_id, userId }, 'Published billing update to Kafka');
+      } catch (kafkaError) {
+        logger.error({ error: kafkaError, invoiceId: invoice.invoice_id }, 'Failed to publish billing update to Kafka');
+        // Don't fail the invoice generation if Kafka publish fails
+      }
+
+      return invoice;
 
     } catch (error) {
       await client.query('ROLLBACK');

@@ -8,7 +8,6 @@ interface KafkaConfig {
   groupId: string;
   topicInput: string;
   topicAgg1m: string;
-  topicAgg15m: string;
   topicAlerts: string;
   topicRegional1m: string;
 }
@@ -26,7 +25,6 @@ interface Config {
   kafka: KafkaConfig;
   postgres: PostgresConfig;
   flushInterval1m: number;
-  flushInterval15m: number;
   regionalCapacity: RegionalCapacityConfig;
 }
 
@@ -38,15 +36,13 @@ const parseEnv = (): Config => ({
     groupId: process.env.KAFKA_GROUP_ID || 'stream-processor-group',
     topicInput: process.env.KAFKA_TOPIC_INPUT || 'raw_readings',
     topicAgg1m: process.env.KAFKA_TOPIC_AGG_1M || 'aggregates_1m',
-    topicAgg15m: process.env.KAFKA_TOPIC_AGG_15M || 'aggregates_15m',
     topicAlerts: process.env.KAFKA_TOPIC_ALERTS || 'alerts',
-    topicRegional1m: process.env.KAFKA_TOPIC_REGIONAL_1M || 'aggregates_1m_regional',
+    topicRegional1m: process.env.KAFKA_TOPIC_REGIONAL_AGG_1M || 'aggregates_1m_regional',
   },
   postgres: {
-    url: process.env.POSTGRES_URL || 'postgres://postgres:password@localhost:5432/segs',
+    url: process.env.POSTGRES_URL || 'postgresql://segs_user:segs_password@localhost:5433/segs_db',
   },
   flushInterval1m: parseInt(process.env.FLUSH_INTERVAL_1M || '60000', 10),
-  flushInterval15m: parseInt(process.env.FLUSH_INTERVAL_15M || '900000', 10),
   regionalCapacity: {
     'Mumbai-North': 320000,
     'Mumbai-South': 288000,

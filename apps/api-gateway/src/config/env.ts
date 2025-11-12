@@ -75,6 +75,14 @@ export const env = {
   REDIS_HOST: redisConfig.host,
   REDIS_PORT: redisConfig.port,
 
+  KAFKA_BROKERS: process.env.KAFKA_BROKERS || 'localhost:29092',
+  KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'api-gateway',
+  KAFKA_TOPICS: {
+    BILLING_UPDATES: process.env.KAFKA_TOPIC_BILLING_UPDATES || 'billing_updates',
+    PAYMENT_UPDATES: process.env.KAFKA_TOPIC_PAYMENT_UPDATES || 'payment_updates',
+    DISPUTE_UPDATES: process.env.KAFKA_TOPIC_DISPUTE_UPDATES || 'dispute_updates',
+  },
+
   JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-jwt-key-minimum-32-characters-long-for-security',
   JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
   JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '7d',

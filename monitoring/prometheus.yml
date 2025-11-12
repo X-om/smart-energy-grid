@@ -64,28 +64,4 @@ scrape_configs:
         labels:
           service: 'notification'
           team: 'operations'
-
-  # Redis exporter (optional - requires redis_exporter container)
-  # - job_name: 'redis'
-  #   static_configs:
-  #     - targets: ['redis-exporter:9121']
-
-  # PostgreSQL exporter (optional - requires postgres_exporter container)
-  # - job_name: 'postgres'
-  #   static_configs:
-  #     - targets: ['postgres-exporter:9187']
-
-  # Kafka exporter (optional - requires kafka_exporter container)
-  # - job_name: 'kafka'
-  #   static_configs:
-  #     - targets: ['kafka-exporter:9308']
-
-# Alerting rules (optional)
-# rule_files:
-#   - 'alerts.yml'
-
-# Alertmanager configuration (optional)
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets: ['alertmanager:9093']
+ 

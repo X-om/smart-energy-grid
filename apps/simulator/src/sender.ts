@@ -2,10 +2,9 @@ import axios, { AxiosError } from 'axios';
 import { Kafka, Producer, ProducerRecord } from 'kafkajs';
 import pLimit from 'p-limit';
 import { TelemetryReading } from '@segs/shared-types';
-import { SimulatorConfig, BatchResponse, ReadingBatch } from './types';
+import { SimulatorConfig, BatchResponse } from './types';
 import { logger } from './utils/logger';
 import { chunkArray } from './generator';
-import { v4 as uuidv4 } from 'uuid';
 
 // * Abstract sender interface.
 export interface Sender {

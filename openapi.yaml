@@ -1,0 +1,2309 @@
+openapi: 3.0.0
+
+info:
+  title: Smart Energy Grid API
+  description: |
+    Comprehensive API documentation for the Smart Energy Grid System.
+    This API provides endpoints for user authentication, telemetry data management, 
+    tariff information, and alert monitoring across the energy grid infrastructure.
+    
+    **Note:** Billing service endpoints are not yet documented.
+  version: 1.0.0
+  contact:
+    name: Smart Energy Grid Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User authentication and account management
+  - name: User Management
+    description: User profile and notification settings
+  - name: Telemetry (User)
+    description: User telemetry data and consumption history
+  - name: Telemetry (Operator)
+    description: Operator telemetry monitoring and analytics
+  - name: Tariff (User)
+    description: User tariff information and cost estimation
+  - name: Tariff (Operator)
+    description: Operator tariff analytics
+  - name: Tariff (Admin)
+    description: Admin tariff management
+  - name: Alert (User)
+    description: User alert notifications
+  - name: Alert (Operator)
+    description: Operator alert management and resolution
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ======================
+  # AUTHENTICATION ROUTES
+  # ======================
+  
+  /api/v1/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - full_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                full_name:
+                  type: string
+                  example: John Doe
+                phone:
+                  type: string
+                  example: "+1234567890"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User registered successfully. Please verify your email.
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                        format: uuid
+                        example: 550e8400-e29b-41d4-a716-446655440000
+                      email:
+                        type: string
+                        example: user@example.com
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: Verify user email with OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+                  example: "123456"
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Email verified successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/resend-verification:
+    post:
+      tags:
+        - Authentication
+      summary: Resend verification OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Verification email resent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Verification email resent successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login successful
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refresh_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      user:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Token refreshed successfully
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refresh_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password reset email sent successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/auth/verify-reset-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Verify password reset OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OTP verified successfully
+                  data:
+                    type: object
+                    properties:
+                      reset_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reset_token
+                - new_password
+              properties:
+                reset_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: NewSecurePass456!
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password reset successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/change-password:
+    post:
+      tags:
+        - Authentication
+      summary: Change password (authenticated)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: NewSecurePass456!
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password changed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Logout successful
+
+  # ======================
+  # USER MANAGEMENT ROUTES
+  # ======================
+
+  /api/v1/users/profile:
+    get:
+      tags:
+        - User Management
+      summary: Get user profile
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Profile retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - User Management
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                  example: Jane Doe
+                phone:
+                  type: string
+                  example: "+9876543210"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Profile updated successfully
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/notification-settings:
+    get:
+      tags:
+        - User Management
+      summary: Get notification settings
+      responses:
+        '200':
+          description: Notification settings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Notification settings retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/NotificationSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - User Management
+      summary: Update notification settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_notifications:
+                  type: boolean
+                  example: true
+                push_notifications:
+                  type: boolean
+                  example: false
+                sms_notifications:
+                  type: boolean
+                  example: true
+                alert_thresholds:
+                  type: object
+                  properties:
+                    high_usage:
+                      type: number
+                      example: 100
+                    anomaly_detection:
+                      type: boolean
+                      example: true
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Notification settings updated successfully
+                  data:
+                    $ref: '#/components/schemas/NotificationSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ======================
+  # TELEMETRY ROUTES (USER)
+  # ======================
+
+  /api/v1/telemetry/user/my-meter:
+    get:
+      tags:
+        - Telemetry (User)
+      summary: Get user's assigned meter information
+      responses:
+        '200':
+          description: Meter data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Meter data retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      meter_id:
+                        type: string
+                        example: MTR-00000001
+                      region:
+                        type: string
+                        example: Mumbai-Central
+                      user_id:
+                        type: string
+                        format: uuid
+                      latest_reading:
+                        $ref: '#/components/schemas/TelemetryReading'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/telemetry/user/history:
+    get:
+      tags:
+        - Telemetry (User)
+      summary: Get user's consumption history
+      parameters:
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: 2024-01-01T00:00:00Z
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: 2024-01-31T23:59:59Z
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 50
+      responses:
+        '200':
+          description: History retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Consumption history retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      meter_id:
+                        type: string
+                        example: MTR-00000001
+                      readings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TelemetryReading'
+                      count:
+                        type: integer
+                        example: 50
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/telemetry/user/stats:
+    get:
+      tags:
+        - Telemetry (User)
+      summary: Get user's consumption statistics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, year]
+          example: month
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Consumption statistics retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      period:
+                        type: string
+                        example: month
+                      average_consumption:
+                        type: number
+                        format: float
+                        example: 3.45
+                      peak_consumption:
+                        type: number
+                        format: float
+                        example: 5.67
+                      total_consumption:
+                        type: number
+                        format: float
+                        example: 103.5
+                      comparison_to_previous:
+                        type: number
+                        format: float
+                        example: -12.5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/telemetry/user/daily-aggregate:
+    get:
+      tags:
+        - Telemetry (User)
+      summary: Get daily aggregated consumption
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: "2024-01-31"
+      responses:
+        '200':
+          description: Daily aggregates retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Daily aggregates retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: "2024-01-15"
+                        total_consumption:
+                          type: number
+                          example: 12.34
+                        avg_power:
+                          type: number
+                          example: 0.51
+                        max_power:
+                          type: number
+                          example: 2.45
+                        min_power:
+                          type: number
+                          example: 0.12
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/telemetry/user/monthly-aggregate:
+    get:
+      tags:
+        - Telemetry (User)
+      summary: Get monthly aggregated consumption
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+          example: 2024
+        - name: month
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+          example: 1
+      responses:
+        '200':
+          description: Monthly aggregates retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Monthly aggregates retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        month:
+                          type: string
+                          example: "2024-01"
+                        total_consumption:
+                          type: number
+                          example: 365.75
+                        avg_daily_consumption:
+                          type: number
+                          example: 11.8
+                        peak_demand:
+                          type: number
+                          example: 5.67
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ======================
+  # TELEMETRY ROUTES (OPERATOR)
+  # ======================
+
+  /api/v1/telemetry/operator/meter/{meterId}:
+    get:
+      tags:
+        - Telemetry (Operator)
+      summary: Get any meter data (operator access)
+      parameters:
+        - name: meterId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: MTR-00000044
+      responses:
+        '200':
+          description: Meter data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Meter data retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      meter_id:
+                        type: string
+                        example: MTR-00000044
+                      region:
+                        type: string
+                        example: Pune-West
+                      latest_reading:
+                        $ref: '#/components/schemas/TelemetryReading'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/telemetry/operator/region-stats:
+    get:
+      tags:
+        - Telemetry (Operator)
+      summary: Get regional statistics
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Pune-West
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [hour, day, week, month]
+          example: day
+      responses:
+        '200':
+          description: Regional statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Regional statistics retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      region:
+                        type: string
+                        example: Pune-West
+                      total_meters:
+                        type: integer
+                        example: 150
+                      total_consumption:
+                        type: number
+                        example: 2345.67
+                      average_consumption:
+                        type: number
+                        example: 15.64
+                      peak_demand:
+                        type: number
+                        example: 45.23
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/telemetry/operator/real-time:
+    get:
+      tags:
+        - Telemetry (Operator)
+      summary: Get real-time telemetry data
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Mumbai-Central
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 20
+      responses:
+        '200':
+          description: Real-time data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Real-time telemetry data retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryReading'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/telemetry/operator/meter/{meterId}/history:
+    get:
+      tags:
+        - Telemetry (Operator)
+      summary: Get meter history (operator access)
+      parameters:
+        - name: meterId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: MTR-00000044
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: 2024-01-01T00:00:00Z
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          example: 2024-01-31T23:59:59Z
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 50
+      responses:
+        '200':
+          description: Meter history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Meter history retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      meter_id:
+                        type: string
+                        example: MTR-00000044
+                      readings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TelemetryReading'
+                      count:
+                        type: integer
+                        example: 50
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/telemetry/operator/top-consumers:
+    get:
+      tags:
+        - Telemetry (Operator)
+      summary: Get top energy consumers
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Pune-West
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+          example: day
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          example: 5
+      responses:
+        '200':
+          description: Top consumers retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Top consumers retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        meter_id:
+                          type: string
+                          example: MTR-00000044
+                        region:
+                          type: string
+                          example: Pune-West
+                        total_consumption:
+                          type: number
+                          example: 125.67
+                        rank:
+                          type: integer
+                          example: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ======================
+  # TARIFF ROUTES (USER)
+  # ======================
+
+  /api/v1/tariff/user/current:
+    get:
+      tags:
+        - Tariff (User)
+      summary: Get current tariff for user's region
+      responses:
+        '200':
+          description: Current tariff retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Current tariff retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tariff/user/region/{region}:
+    get:
+      tags:
+        - Tariff (User)
+      summary: Get tariff for specific region
+      parameters:
+        - name: region
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Mumbai-Central
+      responses:
+        '200':
+          description: Regional tariff retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff for region retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tariff/user/history:
+    get:
+      tags:
+        - Tariff (User)
+      summary: Get tariff history for user's region
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+      responses:
+        '200':
+          description: Tariff history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff history retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/tariff/user/estimate:
+    post:
+      tags:
+        - Tariff (User)
+      summary: Estimate cost for consumption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - consumption_kwh
+              properties:
+                consumption_kwh:
+                  type: number
+                  format: float
+                  example: 150.5
+                region:
+                  type: string
+                  example: Mumbai-Central
+      responses:
+        '200':
+          description: Cost estimate calculated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Cost estimate calculated successfully
+                  data:
+                    type: object
+                    properties:
+                      consumption_kwh:
+                        type: number
+                        example: 150.5
+                      estimated_cost:
+                        type: number
+                        example: 1204.0
+                      region:
+                        type: string
+                        example: Mumbai-Central
+                      tariff_applied:
+                        $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/tariff/user/forecast:
+    get:
+      tags:
+        - Tariff (User)
+      summary: Get tariff forecast
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 7
+          example: 30
+      responses:
+        '200':
+          description: Tariff forecast retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff forecast retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      region:
+                        type: string
+                        example: Mumbai-Central
+                      current_tariff:
+                        $ref: '#/components/schemas/Tariff'
+                      forecast_days:
+                        type: integer
+                        example: 30
+                      predicted_changes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              format: date
+                            predicted_rate:
+                              type: number
+                            confidence:
+                              type: number
+                              format: float
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ======================
+  # TARIFF ROUTES (OPERATOR)
+  # ======================
+
+  /api/v1/tariff/operator/all-regions:
+    get:
+      tags:
+        - Tariff (Operator)
+      summary: Get tariffs for all regions
+      responses:
+        '200':
+          description: All regional tariffs retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariffs for all regions retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tariff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/tariff/operator/analytics:
+    get:
+      tags:
+        - Tariff (Operator)
+      summary: Get tariff analytics
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Mumbai-Central
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, year]
+          example: month
+      responses:
+        '200':
+          description: Tariff analytics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff analytics retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      region:
+                        type: string
+                        example: Mumbai-Central
+                      period:
+                        type: string
+                        example: month
+                      average_rate:
+                        type: number
+                        example: 8.0
+                      peak_rate:
+                        type: number
+                        example: 12.0
+                      off_peak_rate:
+                        type: number
+                        example: 6.0
+                      total_revenue:
+                        type: number
+                        example: 125000.50
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ======================
+  # TARIFF ROUTES (ADMIN)
+  # ======================
+
+  /api/v1/tariff/admin/override:
+    post:
+      tags:
+        - Tariff (Admin)
+      summary: Create tariff override
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - region
+                - rate_per_kwh
+              properties:
+                region:
+                  type: string
+                  example: Mumbai-Central
+                rate_per_kwh:
+                  type: number
+                  format: float
+                  example: 7.5
+                peak_rate:
+                  type: number
+                  format: float
+                  example: 11.0
+                off_peak_rate:
+                  type: number
+                  format: float
+                  example: 5.5
+                reason:
+                  type: string
+                  example: Emergency rate adjustment
+                valid_from:
+                  type: string
+                  format: date-time
+                  example: "2024-02-01T00:00:00Z"
+                valid_until:
+                  type: string
+                  format: date-time
+                  example: "2024-02-29T23:59:59Z"
+      responses:
+        '201':
+          description: Tariff override created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff override created successfully
+                  data:
+                    type: object
+                    properties:
+                      override_id:
+                        type: string
+                        format: uuid
+                      region:
+                        type: string
+                        example: Mumbai-Central
+                      rate_per_kwh:
+                        type: number
+                        example: 7.5
+                      created_by:
+                        type: string
+                        format: uuid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/tariff/admin/override/{overrideId}:
+    delete:
+      tags:
+        - Tariff (Admin)
+      summary: Remove tariff override
+      parameters:
+        - name: overrideId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Tariff override removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Tariff override removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ======================
+  # ALERT ROUTES (USER)
+  # ======================
+
+  /api/v1/alerts/user/my-alerts:
+    get:
+      tags:
+        - Alert (User)
+      summary: Get user's alerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved, all]
+          example: active
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+          example: high
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          example: 20
+      responses:
+        '200':
+          description: Alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alerts retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/alerts/user/{alertId}:
+    get:
+      tags:
+        - Alert (User)
+      summary: Get specific alert details
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 03480d78-481d-486b-8c64-035cf8b69148
+      responses:
+        '200':
+          description: Alert retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ======================
+  # ALERT ROUTES (OPERATOR)
+  # ======================
+
+  /api/v1/alerts/operator/all:
+    get:
+      tags:
+        - Alert (Operator)
+      summary: Get all alerts (operator access)
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Pune-West
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved, all]
+          example: active
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+          example: high
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 50
+      responses:
+        '200':
+          description: All alerts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: All alerts retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/alerts/operator/active:
+    get:
+      tags:
+        - Alert (Operator)
+      summary: Get active alerts requiring attention
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Pune-West
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+          example: critical
+      responses:
+        '200':
+          description: Active alerts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Active alerts retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/alerts/operator/history:
+    get:
+      tags:
+        - Alert (Operator)
+      summary: Get alert history
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Mumbai-Central
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: "2024-01-31"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 50
+      responses:
+        '200':
+          description: Alert history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert history retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/alerts/operator/stats:
+    get:
+      tags:
+        - Alert (Operator)
+      summary: Get alert statistics
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          example: Pune-West
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, year]
+          example: month
+      responses:
+        '200':
+          description: Alert statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert statistics retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      total_alerts:
+                        type: integer
+                        example: 125
+                      active_alerts:
+                        type: integer
+                        example: 15
+                      acknowledged_alerts:
+                        type: integer
+                        example: 30
+                      resolved_alerts:
+                        type: integer
+                        example: 80
+                      by_severity:
+                        type: object
+                        properties:
+                          low:
+                            type: integer
+                            example: 40
+                          medium:
+                            type: integer
+                            example: 55
+                          high:
+                            type: integer
+                            example: 25
+                          critical:
+                            type: integer
+                            example: 5
+                      by_type:
+                        type: object
+                        properties:
+                          ANOMALY:
+                            type: integer
+                            example: 65
+                          THRESHOLD:
+                            type: integer
+                            example: 40
+                          OUTAGE:
+                            type: integer
+                            example: 20
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/alerts/operator/{alertId}:
+    get:
+      tags:
+        - Alert (Operator)
+      summary: Get specific alert (operator access)
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 03480d78-481d-486b-8c64-035cf8b69148
+      responses:
+        '200':
+          description: Alert retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/Alert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/alerts/operator/{alertId}/acknowledge:
+    put:
+      tags:
+        - Alert (Operator)
+      summary: Acknowledge an alert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 92d732ca-2150-4b8f-a837-4da05960fd51
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  example: Investigating the issue
+      responses:
+        '200':
+          description: Alert acknowledged successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert acknowledged successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: 92d732ca-2150-4b8f-a837-4da05960fd51
+                      status:
+                        type: string
+                        example: acknowledged
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      acknowledged_by:
+                        type: string
+                        format: uuid
+                      acknowledged_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-12T14:07:57.782Z"
+                      metadata:
+                        type: object
+                        properties:
+                          acknowledgment_note:
+                            type: string
+                            example: Investigating the issue
+                          acknowledgment_timestamp:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/alerts/operator/{alertId}/resolve:
+    put:
+      tags:
+        - Alert (Operator)
+      summary: Resolve an alert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 92d732ca-2150-4b8f-a837-4da05960fd51
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution_note:
+                  type: string
+                  example: Issue fixed - meter reset performed
+      responses:
+        '200':
+          description: Alert resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Alert resolved successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: 92d732ca-2150-4b8f-a837-4da05960fd51
+                      status:
+                        type: string
+                        example: resolved
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      resolved_at:
+                        type: string
+                        format: date-time
+                        example: "2025-11-12T14:12:40.441Z"
+                      metadata:
+                        type: object
+                        properties:
+                          resolved_by:
+                            type: string
+                            format: uuid
+                          resolution_note:
+                            type: string
+                            example: Issue fixed - meter reset performed
+                          resolution_timestamp:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ======================
+# COMPONENTS
+# ======================
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        full_name:
+          type: string
+          example: John Doe
+        phone:
+          type: string
+          example: "+1234567890"
+        role:
+          type: string
+          enum: [user, operator, admin]
+          example: user
+        is_verified:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotificationSettings:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email_notifications:
+          type: boolean
+          example: true
+        push_notifications:
+          type: boolean
+          example: false
+        sms_notifications:
+          type: boolean
+          example: true
+        alert_thresholds:
+          type: object
+          properties:
+            high_usage:
+              type: number
+              example: 100
+            anomaly_detection:
+              type: boolean
+              example: true
+
+    TelemetryReading:
+      type: object
+      properties:
+        meter_id:
+          type: string
+          example: MTR-00000001
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:30:00Z"
+        voltage:
+          type: number
+          format: float
+          example: 230.5
+        current:
+          type: number
+          format: float
+          example: 10.2
+        power_kw:
+          type: number
+          format: float
+          example: 2.35
+        energy_kwh:
+          type: number
+          format: float
+          example: 0.59
+        power_factor:
+          type: number
+          format: float
+          example: 0.98
+        frequency:
+          type: number
+          format: float
+          example: 50.0
+        region:
+          type: string
+          example: Mumbai-Central
+
+    Tariff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        region:
+          type: string
+          example: Mumbai-Central
+        rate_per_kwh:
+          type: number
+          format: float
+          example: 8.0
+        peak_rate:
+          type: number
+          format: float
+          example: 12.0
+        off_peak_rate:
+          type: number
+          format: float
+          example: 6.0
+        currency:
+          type: string
+          example: INR
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 03480d78-481d-486b-8c64-035cf8b69148
+        type:
+          type: string
+          enum: [ANOMALY, THRESHOLD, OUTAGE]
+          example: ANOMALY
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: medium
+        region:
+          type: string
+          example: Pune-West
+        meter_id:
+          type: string
+          example: MTR-00000044
+        message:
+          type: string
+          example: Sudden power consumption spike detected
+        status:
+          type: string
+          enum: [active, acknowledged, resolved]
+          example: active
+        acknowledged:
+          type: boolean
+          example: false
+        acknowledged_by:
+          type: string
+          format: uuid
+          nullable: true
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: An error occurred
+        error:
+          type: string
+          example: Detailed error message
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Invalid request parameters
+            error: Validation failed
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Authentication required
+            error: No token provided or token expired
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Access denied
+            error: Insufficient permissions for this operation
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Resource not found
+            error: The requested resource does not exist
+
+    Conflict:
+      description: Conflict - Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Resource already exists
+            error: Email already registered

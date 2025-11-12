@@ -1,5 +1,5 @@
 import { WebSocketService } from '../services/webSocketService';
-import { ProcessedAlertMessage, AlertStatusUpdateMessage, TariffUpdateMessage } from '../services/kafkaConsumerService';
+import { ProcessedAlertMessage, AlertStatusUpdateMessage, TariffUpdateMessage, BillingUpdateMessage, PaymentUpdateMessage, DisputeUpdateMessage } from '../services/kafkaConsumerService';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('notification-helper');
@@ -78,6 +78,75 @@ export class NotificationHelper {
       logger.debug({ tariffId: tariff.tariffId, region: tariff.region }, 'Tariff update broadcast complete');
     } catch (error) {
       logger.error({ error, tariff }, 'Failed to handle tariff update');
+      throw error;
+    }
+  }
+
+  async handleBillingUpdate(billing: BillingUpdateMessage): Promise<void> {
+    try {
+      logger.info({
+        invoiceId: billing.invoice_id, userId: billing.user_id, region: billing.region, status: billing.status
+      }, 'Handling billing update');
+
+      // Broadcast to billing channel (all users)
+      this.wsService.broadcast('billing', { type: 'BILLING_UPDATE', payload: billing });
+
+      // Broadcast to invoices channel
+      this.wsService.broadcast('invoices', { type: 'BILLING_UPDATE', payload: billing });
+
+      // Broadcast to specific user's channel if they have a WebSocket connection
+      this.wsService.broadcast(`user:${billing.user_id}`, { type: 'BILLING_UPDATE', payload: billing });
+
+      // Broadcast to region-specific channel
+      this.wsService.broadcast(`region:${billing.region}`, { type: 'BILLING_UPDATE', payload: billing });
+
+      logger.debug({ invoiceId: billing.invoice_id }, 'Billing update broadcast complete');
+    } catch (error) {
+      logger.error({ error, billing }, 'Failed to handle billing update');
+      throw error;
+    }
+  }
+
+  async handlePaymentUpdate(payment: PaymentUpdateMessage): Promise<void> {
+    try {
+      logger.info({
+        transactionId: payment.transaction_id, invoiceId: payment.invoice_id, userId: payment.user_id, status: payment.status
+      }, 'Handling payment update');
+
+      // Broadcast to payments channel
+      this.wsService.broadcast('payments', { type: 'PAYMENT_UPDATE', payload: payment });
+
+      // Broadcast to billing channel
+      this.wsService.broadcast('billing', { type: 'PAYMENT_UPDATE', payload: payment });
+
+      // Broadcast to specific user's channel
+      this.wsService.broadcast(`user:${payment.user_id}`, { type: 'PAYMENT_UPDATE', payload: payment });
+
+      logger.debug({ transactionId: payment.transaction_id }, 'Payment update broadcast complete');
+    } catch (error) {
+      logger.error({ error, payment }, 'Failed to handle payment update');
+      throw error;
+    }
+  }
+
+  async handleDisputeUpdate(dispute: DisputeUpdateMessage): Promise<void> {
+    try {
+      logger.info({
+        disputeId: dispute.dispute_id, invoiceId: dispute.invoice_id, userId: dispute.user_id, status: dispute.status
+      }, 'Handling dispute update');
+
+      // Broadcast to disputes channel (operators/admins)
+      this.wsService.broadcast('disputes', { type: 'DISPUTE_UPDATE', payload: dispute });
+
+      // Broadcast to billing channel
+      this.wsService.broadcast('billing', { type: 'DISPUTE_UPDATE', payload: dispute });
+
+      // Broadcast to specific user's channel
+      this.wsService.broadcast(`user:${dispute.user_id}`, { type: 'DISPUTE_UPDATE', payload: dispute });
+
+      logger.debug({ disputeId: dispute.dispute_id }, 'Dispute update broadcast complete');
+    } catch (error) {
+      logger.error({ error, dispute }, 'Failed to handle dispute update');
       throw error;
     }
   }

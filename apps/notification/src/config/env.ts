@@ -13,6 +13,9 @@ export interface KafkaConfig {
   readonly topicAlertsProcessed: string;
   readonly topicAlertStatusUpdates: string;
   readonly topicTariffUpdates: string;
+  readonly topicBillingUpdates: string;
+  readonly topicPaymentUpdates: string;
+  readonly topicDisputeUpdates: string;
 }
 
 export interface WebSocketConfig {
@@ -24,18 +27,21 @@ export interface WebSocketConfig {
 
 export const Config = {
   server: {
-    port: parseInt(process.env.PORT || '3005', 10),
+    port: parseInt(process.env.PORT || '3003', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
     serviceName: 'notification-service'
   } as ServerConfig,
 
   kafka: {
-    brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
-    clientId: 'notification-service',
-    groupId: process.env.KAFKA_GROUP_ID || 'notification-group',
+    brokers: (process.env.KAFKA_BROKERS || 'localhost:29092').split(','),
+    clientId: process.env.KAFKA_CLIENT_ID || 'notification-service',
+    groupId: process.env.KAFKA_GROUP_ID || 'notification-service-group',
     topicAlertsProcessed: 'alerts_processed',
     topicAlertStatusUpdates: 'alert_status_updates',
-    topicTariffUpdates: 'tariff_updates'
+    topicTariffUpdates: 'tariff_updates',
+    topicBillingUpdates: 'billing_updates',
+    topicPaymentUpdates: 'payment_updates',
+    topicDisputeUpdates: 'dispute_updates'
   } as KafkaConfig,
 
   websocket: {

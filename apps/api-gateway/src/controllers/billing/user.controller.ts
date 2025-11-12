@@ -100,9 +100,11 @@ export const getEstimatedBill = asyncHandler(
     const daysElapsed = Math.ceil((now.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24));
     const consumptionToDate = await getEstimatedConsumption(meterId, cycleStart, now);
     const projectedConsumption = (consumptionToDate / daysElapsed) * totalDays;
-    const avgRate = 6.5;
+
+    // Fetch actual tariff rate from database based on user's region
+    const avgRate = await getAverageTariffRate(user.region);
     const estimatedBaseCost = projectedConsumption * avgRate;
-    const estimatedTax = estimatedBaseCost * 0.1;
+    const estimatedTax = estimatedBaseCost * 0.18; // 18% GST for India
     const estimatedTotal = estimatedBaseCost + estimatedTax;
 
     let confidenceLevel: 'high' | 'medium' | 'low' = 'low';
@@ -113,7 +115,8 @@ export const getEstimatedBill = asyncHandler(
       period_start: cycleStart, period_end: cycleEnd, days_elapsed: daysElapsed, total_days: totalDays,
       consumption_to_date_kwh: consumptionToDate, projected_consumption_kwh: projectedConsumption,
       avg_tariff_rate: avgRate, estimated_base_cost: estimatedBaseCost, estimated_tax: estimatedTax,
-      estimated_total: estimatedTotal, currency: 'USD', confidence_level: confidenceLevel,
+      estimated_total: estimatedTotal, currency: 'INR', confidence_level: confidenceLevel,
+      tax_rate: 0.18, tax_note: 'Includes 18% GST'
     });
   }
 );
@@ -159,15 +162,33 @@ export const disputeInvoice = asyncHandler(
 
 async function getEstimatedConsumption(meterId: string, startDate: Date, endDate: Date): Promise<number> {
   try {
+    // Calculate energy from average power: Energy (kWh) = Power (kW) × Time (hours)
+    // For 1-minute aggregates: Energy per reading = avg_power_kw × (1/60)
     const query = `
-      SELECT COALESCE(SUM(energy_kwh), 0) as total_consumption
-      FROM raw_readings
-      WHERE meter_id = $1 AND timestamp >= $2 AND timestamp <= $3
+      SELECT COALESCE(SUM(avg_power_kw * (1.0/60.0)), 0) as total_consumption
+      FROM aggregates_1m
+      WHERE meter_id = $1 AND window_start >= $2 AND window_start <= $3
     `;
     const result = await timescalePool.query(query, [meterId, startDate, endDate]);
     return parseFloat(result.rows[0]?.total_consumption || '0');
   } catch (error) {
     console.error('Error calculating consumption:', error);
     return 0;
+  }
+}
+
+async function getAverageTariffRate(region: string): Promise<number> {
+  try {
+    const { postgresPool } = await import('../../utils/db');
+    const query = `
+      SELECT AVG(price_per_kwh) as avg_rate
+      FROM tariffs
+      WHERE region = $1 AND is_active = true
+    `;
+    const result = await postgresPool.query(query, [region]);
+    return parseFloat(result.rows[0]?.avg_rate || '6.5');
+  } catch (error) {
+    console.error('Error fetching tariff rate:', error);
+    return 6.5; // Fallback rate
   }
 }
