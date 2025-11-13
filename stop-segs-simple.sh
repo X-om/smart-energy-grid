@@ -30,6 +30,16 @@ fi
 # Also kill any remaining node processes for our services
 pkill -f "node.*apps/(api-gateway|ingestion|stream-processor|tariff|alert|notification|simulator)" 2>/dev/null || true
 
+# Force kill any processes on service ports
+echo "  Clearing service ports..."
+for port in 3000 3001 3002 3003 3004 3005; do
+  pid=$(lsof -ti :$port 2>/dev/null)
+  if [ -n "$pid" ]; then
+    echo "  Killing process on port $port (PID: $pid)"
+    kill -9 $pid 2>/dev/null || true
+  fi
+done
+
 echo -e "${GREEN}✓ Microservices stopped${NC}"
 echo ""
 
