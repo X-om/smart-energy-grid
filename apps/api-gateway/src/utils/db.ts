@@ -31,7 +31,10 @@ export const redisClient: RedisClientType = createClient({
   socket: {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
-    reconnectStrategy: false,
+    reconnectStrategy: (retries) => {
+      if (retries > 10) return new Error('Max reconnection attempts reached');
+      return Math.min(retries * 100, 3000);
+    },
   }
 });
 

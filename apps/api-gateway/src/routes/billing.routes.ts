@@ -2,21 +2,9 @@ import { NextFunction, Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth/authenticate';
 import { authorize } from '../middleware/auth/authorize';
 import { env } from '../config/env';
-
-import {
-  validateGetInvoices, validateInvoiceId, validateMarkInvoicePaid, validateDisputeInvoice,
-  validatePaymentHistoryQuery, validateRegionParam, validateInvoiceAnalytics,
-  validateGenerateMonthlyInvoices, validateExportInvoices,
-} from '../middleware/validation/billing.validation';
-
-import {
-  getUserInvoices, getInvoiceDetails, downloadInvoicePDF, getCurrentCycle,
-  getEstimatedBill, getPaymentHistory, markInvoiceAsPaid, disputeInvoice,
-} from '../controllers/billing/user.controller';
-
-import {
-  getOverdueInvoices, getInvoiceAnalytics, generateMonthlyInvoices, exportInvoiceData,
-} from '../controllers/billing/operator.controller';
+import { validateGetInvoices, validateInvoiceId, validateMarkInvoicePaid, validateDisputeInvoice, validatePaymentHistoryQuery, validateRegionParam, validateInvoiceAnalytics, validateGenerateMonthlyInvoices, validateExportInvoices } from '../middleware/validation/billing.validation';
+import { getUserInvoices, getInvoiceDetails, downloadInvoicePDF, getCurrentCycle, getEstimatedBill, getPaymentHistory, markInvoiceAsPaid, disputeInvoice } from '../controllers/billing/user.controller';
+import { getOverdueInvoices, getInvoiceAnalytics, generateMonthlyInvoices, exportInvoiceData } from '../controllers/billing/operator.controller';
 
 const router: Router = Router();
 
@@ -30,7 +18,7 @@ const checkBillingEnabled = (req: Request, res: Response, next: NextFunction) =>
 };
 
 router.use(checkBillingEnabled);
- 
+
 router.get('/invoices', authenticate, validateGetInvoices, getUserInvoices);
 router.get('/invoices/:invoiceId', authenticate, validateInvoiceId, getInvoiceDetails);
 router.get('/invoices/:invoiceId/pdf', authenticate, validateInvoiceId, downloadInvoicePDF);

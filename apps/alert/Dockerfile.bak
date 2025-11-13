@@ -59,6 +59,8 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/apps/alert/dist ./apps/alert/dist
 
+# Copy SQL migrations to dist folder (matching compiled __dirname path)
+COPY --from=builder --chown=nodejs:nodejs /app/apps/alert/src/db/migrations ./apps/alert/dist/db/migrations
 
 COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
 

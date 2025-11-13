@@ -53,6 +53,8 @@ COPY --from=builder /app/apps/stream-processor/dist ./apps/stream-processor/dist
 COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
 
+# Copy SQL migrations
+COPY --from=builder /app/apps/stream-processor/src/db/migrations ./apps/stream-processor/dist/db/migrations
 
 # Set environment variables
 ENV NODE_ENV=production \

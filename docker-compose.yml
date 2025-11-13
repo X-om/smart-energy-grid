@@ -23,10 +23,10 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT_HOST://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_HOST
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     depends_on:
@@ -35,7 +35,7 @@ services:
     networks:
       - segs-net
     healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:29092", "--list"]
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -47,7 +47,7 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: segs-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
       kafka:
@@ -72,19 +72,19 @@ services:
       - segs-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
   postgres:
     image: postgres:15-alpine
     container_name: segs-postgres
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: segs_db
       POSTGRES_USER: segs_user
       POSTGRES_PASSWORD: segs_password
+    ports:
+      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -92,19 +92,19 @@ services:
       - segs-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U segs_user -d segs_db"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
   timescaledb:
     image: timescale/timescaledb:2.13.0-pg15
     container_name: segs-timescaledb
-    ports:
-      - "5433:5432"
     environment:
       POSTGRES_DB: segs_db
       POSTGRES_USER: segs_user
       POSTGRES_PASSWORD: segs_password
+    ports:
+      - "5433:5432"
     volumes:
       - timescaledb-data:/var/lib/postgresql/data
       - ./scripts/init-timescale.sql:/docker-entrypoint-initdb.d/init-timescale.sql
@@ -112,7 +112,7 @@ services:
       - segs-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U segs_user -d segs_db"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -133,7 +133,7 @@ services:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
   grafana:
     image: grafana/grafana:latest
@@ -141,14 +141,11 @@ services:
     ports:
       - "3006:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_INSTALL_PLUGINS=grafana-clock-panel
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-    depends_on:
-      - prometheus
     networks:
       - segs-net
     healthcheck:
@@ -157,253 +154,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kafka Topic Initialization
-  kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: segs-kafka-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks:
-      - segs-net
-    command: >
-      bash -c "
-        echo 'Creating Kafka topics...'
-        kafka-topics --create --if-not-exists --topic raw_readings --bootstrap-server kafka:29092 --partitions 6 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic aggregates_1m --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic aggregates_15m --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic regional_aggregates --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic anomalies --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic tariff_updates --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic alerts --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1
-        kafka-topics --create --if-not-exists --topic tariff_overrides --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
-        echo 'Kafka topics created successfully'
-        kafka-topics --list --bootstrap-server kafka:29092
-      "
-    restart: on-failure
-
-  # API Gateway Service
-  api-gateway:
-    build:
-      context: .
-      dockerfile: apps/api-gateway/Dockerfile
-    container_name: segs-api-gateway
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      LOG_LEVEL: info
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      TIMESCALE_URL: postgresql://segs_user:segs_password@timescaledb:5432/segs_db
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: segs-jwt-secret-change-in-production
-      JWT_EXPIRES_IN: 15m
-      REFRESH_TOKEN_EXPIRES_IN: 7d
-    depends_on:
-      postgres:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Ingestion Service
-  ingestion:
-    build:
-      context: .
-      dockerfile: apps/ingestion/Dockerfile
-    container_name: segs-ingestion
-    ports:
-      - "3001:3001"
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_CLIENT_ID: segs-ingestion
-      KAFKA_TOPIC: raw_readings
-      METRICS_PORT: 9091
-    depends_on:
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Stream Processor Service
-  stream-processor:
-    build:
-      context: .
-      dockerfile: apps/stream-processor/Dockerfile
-    container_name: segs-stream-processor
-    ports:
-      - "3002:3002"
-    environment:
-      NODE_ENV: production
-      PORT: 3002
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_CLIENT_ID: segs-stream-processor
-      KAFKA_GROUP_ID: stream-processor-group
-      KAFKA_TOPIC_INPUT: raw_readings
-      KAFKA_TOPIC_OUTPUT_1M: aggregates_1m
-      KAFKA_TOPIC_OUTPUT_15M: aggregates_15m
-      KAFKA_TOPIC_OUTPUT_REGIONAL: regional_aggregates
-      KAFKA_TOPIC_OUTPUT_ANOMALIES: anomalies
-      TIMESCALE_URL: postgresql://segs_user:segs_password@timescaledb:5432/segs_db
-      REDIS_URL: redis://redis:6379
-      FLUSH_INTERVAL_MS: 60000
-      METRICS_PORT: 9092
-    depends_on:
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Tariff Service
-  tariff:
-    build:
-      context: .
-      dockerfile: apps/tariff/Dockerfile
-    container_name: segs-tariff
-    ports:
-      - "3003:3003"
-    environment:
-      NODE_ENV: production
-      PORT: 3003
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_CLIENT_ID: segs-tariff
-      KAFKA_GROUP_ID: tariff-service-group
-      KAFKA_TOPIC_INPUT: regional_aggregates
-      KAFKA_TOPIC_OUTPUT: tariff_updates
-      KAFKA_TOPIC_OVERRIDES: tariff_overrides
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      REDIS_URL: redis://redis:6379
-      METRICS_PORT: 9093
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Alert Service
-  alert:
-    build:
-      context: .
-      dockerfile: apps/alert/Dockerfile
-    container_name: segs-alert
-    ports:
-      - "3004:3004"
-    environment:
-      NODE_ENV: production
-      PORT: 3004
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_CLIENT_ID: segs-alert
-      KAFKA_GROUP_ID: alert-service-group
-      KAFKA_TOPIC_INPUT_REGIONAL: regional_aggregates
-      KAFKA_TOPIC_INPUT_ANOMALIES: anomalies
-      KAFKA_TOPIC_OUTPUT: alerts
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      REDIS_URL: redis://redis:6379
-      METRICS_PORT: 9094
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Notification Service
-  notification:
-    build:
-      context: .
-      dockerfile: apps/notification/Dockerfile
-    container_name: segs-notification
-    ports:
-      - "3005:3005"
-    environment:
-      NODE_ENV: production
-      PORT: 3005
-      LOG_LEVEL: info
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_CLIENT_ID: segs-notification
-      KAFKA_GROUP_ID: notification-service-group
-      KAFKA_TOPIC_ALERTS: alerts
-      KAFKA_TOPIC_TARIFF_UPDATES: tariff_updates
-      DATABASE_URL: postgresql://segs_user:segs_password@postgres:5432/segs_db
-      REDIS_URL: redis://redis:6379
-      METRICS_PORT: 9095
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
-  # Simulator Service
-  simulator:
-    build:
-      context: .
-      dockerfile: apps/simulator/Dockerfile
-    container_name: segs-simulator
-    ports:
-      - "3007:3007"
-    environment:
-      NODE_ENV: production
-      LOG_LEVEL: info
-      METERS: 5000
-      INTERVAL: 10
-      MODE: normal
-      TARGET: http
-      INGESTION_URL: http://ingestion:3001/telemetry/batch
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_TOPIC: raw_readings
-      KAFKA_CLIENT_ID: segs-simulator
-      BATCH_SIZE: 500
-      CONCURRENCY_LIMIT: 10
-      ITERATIONS: 0
-      REGIONS: Mumbai-Central,Pune-West,Delhi-South,Bangalore-East
-      METRICS_ENABLED: true
-      METRICS_PORT: 7000
-    depends_on:
-      ingestion:
-        condition: service_started
-      kafka-init:
-        condition: service_completed_successfully
-    networks:
-      - segs-net
-    restart: unless-stopped
-
 networks:
   segs-net:
-    driver: bridge
     name: segs-network
+    driver: bridge
 
 volumes:
   postgres-data:

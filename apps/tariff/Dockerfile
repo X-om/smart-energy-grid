@@ -53,8 +53,6 @@ COPY --from=builder /app/apps/tariff/dist ./apps/tariff/dist
 COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
 
-# Copy SQL migrations
-COPY --from=builder /app/apps/tariff/src/db/migrations ./apps/tariff/dist/db/migrations
 
 # Set environment variables
 ENV NODE_ENV=production \

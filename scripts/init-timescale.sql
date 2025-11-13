@@ -181,8 +181,6 @@ SELECT add_continuous_aggregate_policy('cagg_1m',
     if_not_exists => TRUE
 );
 
-COMMENT ON MATERIALIZED VIEW cagg_1m IS 'Continuous aggregate for validation (primary aggregation done by stream processor)';
-
 -- ==========================================
 -- DATA RETENTION POLICIES
 -- ==========================================

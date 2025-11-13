@@ -8,7 +8,7 @@
     "dev": "nodemon",
     "start:dev": "pnpm build && node -r dotenv/config dist/index.js",
     "build": "tsc",
-    "start": "nodemon",
+    "start": "node dist/apps/api-gateway/src/index.js",
     "lint": "eslint src/**/*.ts",
     "test": "jest",
     "clean": "rm -rf dist",
